@@ -4,6 +4,8 @@
 
 Allows you to generate semi-custom maps on default Rust generator.
 
+For installation and usage instructions, see [USAGE.md](USAGE.md)
+
 ### Features
 
 1. QoL (Quality of Life)
@@ -41,6 +43,7 @@ Allows you to generate semi-custom maps on default Rust generator.
 5. Map Image Generator
 - [x] Generate splat/height map
 - [x] Generate monument names
+- [x] Generate map grid
 
 6. Additional Features
 - [x] Monument Swapping
@@ -51,17 +54,7 @@ Allows you to generate semi-custom maps on default Rust generator.
 - [x] Russian and English language support in configuration
 
 ### Monument Swapping Setup  
-To use the Monument Swapping feature:  
-  1. Enable option "Swap Monuments" => "Enabled": true  
-  2. Place your custom monument prefabs in the `maps/prefabs` folder  
-  Supported format: `.prefab`  
-  Name format: `monument_original_path.prefab` (e.g. `fishing_village_c.prefab`)  
-  Requirements:  
-    - Monument size should match the vanilla  
-    - Ensure proper terrain alignment in the prefab
-     
-> Note: Make sure your custom monuments and whole map are properly tested before using them on server!
-
+Instructions for use can be found in the `USAGE.md` file
 
 Configure all features at `HarmonyConfig/CustomGeneratorCFG.json`
 
