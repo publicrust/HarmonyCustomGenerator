@@ -10,7 +10,7 @@
 1. Убедитесь, что на сервере установлен Harmony 2.3 (установлен по умолчанию)
 2. Скопируйте файл генератора в `HarmonyMods/CustomGenerator.dll`
 
-Логи будут доступны в `HarmonyConfig/logs`
+Логи будут доступны в `HarmonyConfig/logs`  
 Сгенерированные изображения карт в `mapimages/`
 
 

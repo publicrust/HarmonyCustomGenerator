@@ -11,7 +11,7 @@
 2. Copy the generator dll file to the `HarmonyMods/CustomGenerator.dll`
 3. Configure settings in `HarmonyConfig/CustomGeneratorCFG.json`
 
-Logs will be available in `HarmonyConfig/logs`
+Logs will be available in `HarmonyConfig/logs`  
 Generated map images in `mapimages/`
 
 

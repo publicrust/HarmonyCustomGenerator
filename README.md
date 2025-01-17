@@ -1,6 +1,7 @@
 # Custom Rust Map Generator (Harmony 2.3)
 ![Static Badge](https://img.shields.io/badge/Harmony-2.3-blue?style=for-the-badge)
 ![Static Badge](https://img.shields.io/github/license/hammzat/HarmonyCustomGenerator?label=license&style=for-the-badge)
+[![Boosty](https://img.shields.io/badge/Support%20on-Boosty-orange?style=for-the-badge)](https://boosty.to/aristocratos)
 
 Allows you to generate semi-custom maps on default Rust generator.
 
