@@ -37,7 +37,7 @@ Monument Swapping allows you to replace vanilla monuments with custom ones while
 1. Enable "Swap Monuments" => "Enabled": true
 2. Place your custom monument prefabs in the `maps/prefabs` folder
 3. Prefab requirements:
-   - File format: `.prefab`
+   - File format: `.map` (see examples in the `CustomPrefabs` folder, thanks to FlySelf)
    - Name format: `monument_original_path.prefab` (example: `fishing_village_c.prefab`)
    - Monument size must match the original
    - Proper terrain alignment in the prefab
