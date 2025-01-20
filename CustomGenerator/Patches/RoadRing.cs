@@ -72,4 +72,28 @@ namespace CustomGenerator.Generators {
             return true;
         }
     }
+
+    [HarmonyPatch]
+    internal static class GenerateRoadTopology_Process
+    {
+        private static MethodBase TargetMethod() { return AccessTools.Method(typeof(GenerateRoadTopology), "Process"); }
+        private static AccessTools.FieldRef<TerrainTopologyMap, int> _res = AccessTools.FieldRefAccess<TerrainTopologyMap, int>("res");
+        private static AccessTools.FieldRef<TerrainTopologyMap, int[]> _dst = AccessTools.FieldRefAccess<TerrainTopologyMap, int[]>("dst");
+
+        private static void Postfix()
+        {
+            TerrainHeightMap heightmap = TerrainMeta.HeightMap;
+            TerrainTopologyMap topomap = TerrainMeta.TopologyMap;
+            int[] map = _dst(topomap);
+            int res = _res(topomap);
+
+            ImageProcessing.Dilate2D(map, res, res, TerrainTopology.ROAD, 1, delegate (int x, int y) {
+                if ((map[x * res + y] & 49) != 0)
+                {
+                    map[x * res + y] &= ~TerrainTopology.ROAD;
+                    map[x * res + y] |= TerrainTopology.BUILDING;
+                }
+            });
+        }
+    }
 }

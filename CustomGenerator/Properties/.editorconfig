@@ -3,8 +3,9 @@ root = true
 
 # Файлы C#
 [*.cs]
-dotnet_diagnostic.IDE0051.severity = none
-
+dotnet_diagnostic.IDE0051.severity = none  # Отключает предупреждение о приватных неиспользуемых методах
+dotnet_diagnostic.CS0169.severity = none   # Отключает предупреждение о неиспользуемых приватных полях
+dotnet_diagnostic.CS0649.severity = none   # Отключает предупреждение о полях, которым никогда не присваивается значение
 #### Основные параметры EditorConfig ####
 
 # Отступы и интервалы
