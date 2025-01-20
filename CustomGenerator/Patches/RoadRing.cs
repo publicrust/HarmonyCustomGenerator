@@ -80,8 +80,8 @@ namespace CustomGenerator.Generators {
         private static AccessTools.FieldRef<TerrainTopologyMap, int> _res = AccessTools.FieldRefAccess<TerrainTopologyMap, int>("res");
         private static AccessTools.FieldRef<TerrainTopologyMap, int[]> _dst = AccessTools.FieldRefAccess<TerrainTopologyMap, int[]>("dst");
 
-        private static void Postfix()
-        {
+        private static void Postfix() {
+            if (!Config.Generator.AllowRoadBuild) return;
             TerrainHeightMap heightmap = TerrainMeta.HeightMap;
             TerrainTopologyMap topomap = TerrainMeta.TopologyMap;
             int[] map = _dst(topomap);
