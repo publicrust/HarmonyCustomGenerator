@@ -13,6 +13,7 @@
     <FileAlignment>512</FileAlignment>
     <Deterministic>true</Deterministic>
     <AdditionalOutputPath>C:\Server\server\HarmonyMods\</AdditionalOutputPath>
+    <LangVersion>10.0</LangVersion>
   </PropertyGroup>
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Debug|AnyCPU' ">
     <DebugSymbols>true</DebugSymbols>
@@ -29,7 +30,7 @@
     <OutputPath>bin\Release\</OutputPath>
     <DefineConstants>TRACE</DefineConstants>
     <ErrorReport>prompt</ErrorReport>
-    <WarningLevel>4</WarningLevel>
+    <WarningLevel>5</WarningLevel>
   </PropertyGroup>
   <ItemGroup>
     <Reference Include="0Harmony">
@@ -202,6 +203,7 @@
     <Compile Include="HarmonyHooks.cs" />
     <Compile Include="Patches\Monuments.cs" />
     <Compile Include="Patches\RailRing.cs" />
+    <Compile Include="Patches\River.cs" />
     <Compile Include="Patches\RoadRing.cs" />
     <Compile Include="Patches\World.cs" />
     <Compile Include="Patches\WorldSetup.cs" />

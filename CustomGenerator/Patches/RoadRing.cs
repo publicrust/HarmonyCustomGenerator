@@ -1,9 +1,10 @@
-using CustomGenerator.Utilities;
+using CustomGenerator.Utility;
 using HarmonyLib;
 using System.Collections.Generic;
 using System.Linq;
 using System.Reflection;
 using System.Reflection.Emit;
+using Unity.Collections;
 using UnityEngine;
 
 using static CustomGenerator.ExtConfig;
@@ -19,6 +20,7 @@ namespace CustomGenerator.Generators {
             if (!Config.Generator.Road.Enabled) {
                 MinSize(__instance) = int.MaxValue;
                 Logging.Generation($"Road MinWorldSize changed to max! Dont generate!");
+                return;
             }
             if (!Config.Generator.Road.GenerateRing) return;
 
@@ -78,13 +80,13 @@ namespace CustomGenerator.Generators {
     {
         private static MethodBase TargetMethod() { return AccessTools.Method(typeof(GenerateRoadTopology), "Process"); }
         private static AccessTools.FieldRef<TerrainTopologyMap, int> _res = AccessTools.FieldRefAccess<TerrainTopologyMap, int>("res");
-        private static AccessTools.FieldRef<TerrainTopologyMap, int[]> _dst = AccessTools.FieldRefAccess<TerrainTopologyMap, int[]>("dst");
+        private static AccessTools.FieldRef<TerrainTopologyMap, NativeArray<int>> _dst = AccessTools.FieldRefAccess<TerrainTopologyMap, NativeArray<int>>("dst");
 
         private static void Postfix() {
             if (!Config.Generator.AllowRoadBuild) return;
             TerrainHeightMap heightmap = TerrainMeta.HeightMap;
             TerrainTopologyMap topomap = TerrainMeta.TopologyMap;
-            int[] map = _dst(topomap);
+            NativeArray<int> map = _dst(topomap);
             int res = _res(topomap);
 
             ImageProcessing.Dilate2D(map, res, res, TerrainTopology.ROAD, 1, delegate (int x, int y) {

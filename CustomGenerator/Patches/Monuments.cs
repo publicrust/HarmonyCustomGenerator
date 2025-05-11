@@ -1,4 +1,4 @@
-﻿using CustomGenerator.Utilities;
+﻿using CustomGenerator.Utility;
 using CustomGenerator.Utility;
 using HarmonyLib;
 using System;

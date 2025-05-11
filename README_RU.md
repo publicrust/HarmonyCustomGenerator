@@ -1,11 +1,13 @@
 # Custom Rust Map Generator (Harmony 2.3)
 ![Static Badge](https://img.shields.io/badge/Harmony-2.3-blue?style=for-the-badge)
-![Static Badge](https://img.shields.io/github/license/hammzat/HarmonyCustomGenerator?label=license&style=for-the-badge)
+![GitHub Downloads (all assets, all releases)](https://img.shields.io/github/downloads/hammzat/HarmonyCustomGenerator/total?style=for-the-badge&color=blue)
 [![Boosty](https://img.shields.io/badge/Support%20on-Boosty-orange?style=for-the-badge)](https://boosty.to/aristocratos)
 
 Позволяет генерировать полу-кастомные карты на стандартном генераторе Rust.
 
-Инструкции по установке и использованию смотрите в [USAGE_RU.md](USAGE_RU.md)
+Инструкции по установке и использованию смотрите в [USAGE_RU.md](USAGE_RU.md).
+
+Для помощи, репорта багов и другого заходите в [наш дискорд](https://discord.gg/xUdpkm8RUS).
 
 ### Возможности
 
@@ -63,7 +65,7 @@
 ------
 ### Авторы и благодарности
 - [@aristocratos](https://github.com/hammzat)
-  - По вопросам поддержки пишите мне в Discord - aristocratos
+  - По вопросам поддержки заходите в [наш дискорд](https://discord.gg/xUdpkm8RUS)
  
 Благодарности:
 - bmgjet

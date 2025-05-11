@@ -44,4 +44,4 @@ Monument Swapping allows you to replace vanilla monuments with custom ones while
 
 > Note: Make sure your custom monuments and whole map are properly tested before using them on server!
 
-For support, contact the author on Discord: aristocratos 
+For support, join our [discord server](https://discord.gg/xUdpkm8RUS).

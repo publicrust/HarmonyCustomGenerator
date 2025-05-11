@@ -2,7 +2,7 @@ using System;
 using System.IO;
 using UnityEngine;
 
-namespace CustomGenerator.Utilities
+namespace CustomGenerator.Utility
 {
     public static class Logging
     {
@@ -39,6 +39,13 @@ namespace CustomGenerator.Utilities
         {
             string formattedMessage = $"[INFO] {DateTime.Now:HH:mm:ss} | {message}";
             Debug.Log($"[CGen] {message}");
+            WriteToFile(formattedMessage);
+        }
+
+        public static void Dbg(string message)
+        {
+            string formattedMessage = $"[DEBUG] {DateTime.Now:HH:mm:ss} | {message}";
+            Debug.Log($"[CGen|Debug] {message}");
             WriteToFile(formattedMessage);
         }
 

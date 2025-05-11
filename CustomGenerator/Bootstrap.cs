@@ -1,6 +1,6 @@
 using HarmonyLib;
 using UnityEngine;
-using CustomGenerator.Utilities;
+using CustomGenerator.Utility;
 
 using static CustomGenerator.ExtConfig;
 namespace CustomGenerator {

@@ -5,7 +5,6 @@ using System.Collections.Generic;
 using System.IO;
 using UnityEngine;
 using CustomGenerator.Utility;
-using CustomGenerator.Utilities;
 
 namespace CustomGenerator
 {
@@ -13,9 +12,9 @@ namespace CustomGenerator
         public const bool EN = true;
         public static ConfigData Config;
         public static TempData tempData;
-        private static string CurrentVersion = "0.1.2";
+        private static readonly string CurrentVersion = "0.2.0";
 
-        private static readonly string Location = Path.Combine("HarmonyConfig", "CustomGeneratorCFG.json");
+        private static readonly string Location = Path.Combine("HarmonyConfig", "CustomGenerator.json");
 
         static ExtConfig() {
             LoadConfig();
@@ -26,16 +25,16 @@ namespace CustomGenerator
             public bool SkipAssetWarmup = true;
 
             [JsonProperty(EN ? "Map Settings" : "Настройки Карты")]
-            public MapSettings mapSettings = new MapSettings();
+            public MapSettings mapSettings = new();
 
             [JsonProperty(EN ? "Main Generator" : "Основной Генератор")]
-            public GeneratorSettings Generator = new GeneratorSettings();
+            public GeneratorSettings Generator = new();
 
             [JsonProperty(EN ? "Swap Monuments" : "Замена Монументов")]
-            public SwapSettings Swap = new SwapSettings();
+            public SwapSettings Swap = new();
 
             [JsonProperty(EN ? "Monuments" : "Монументы")]
-            public MonumentSettings Monuments = new MonumentSettings();
+            public MonumentSettings Monuments = new();
 
             public string Version = CurrentVersion;
         }
@@ -49,18 +48,21 @@ namespace CustomGenerator
             [JsonProperty(EN ? "Override Map Name" : "Перезаписать название карты")]
             public bool OverrideName = true;
             [JsonProperty(EN ? "Map Name ({0} - size, {1} - seed)" : "Название карты ({0} - размер, {1} - сид)")]
-            public string MapName = "Map{0}_{1}.CGEN";
+            public string MapName = "CustomMap{0}_{1}.CGEN";
         }
 
         public sealed class GeneratorSettings {
-            public SimplePath Road = new SimplePath();
-            public SimplePath Rail = new SimplePath();
-            public UniqueEnviroment UniqueEnviroment = new UniqueEnviroment();
+            public SimplePath Road = new();
+            public SimplePath Rail = new();
+            public UniqueEnviroment UniqueEnviroment = new();
+
+            [JsonProperty(EN ? "Remove Rivers" : "Удалить реки")]
+            public bool RemoveRivers = false;
+           // [JsonProperty(EN ? "Reduce River Width" : "Уменишить ширину рек")]
+            // public bool ReduceRiversWidth = false;
 
             [JsonProperty(EN ? "Remove Car Wrecks around Road" : "Удалить разбитые префабы машин около дороги")]
             public bool RemoveCarWrecks = false;
-            [JsonProperty(EN ? "Remove Rivers" : "Удалить реки")]
-            public bool RemoveRivers = false;
             [JsonProperty(EN ? "Allow building on road" : "Разрешить строительство на дорогах")]
             public bool AllowRoadBuild = false;
             //[JsonProperty("Remove large powerlines")]
@@ -74,9 +76,9 @@ namespace CustomGenerator
             [JsonProperty(EN ? "Change percentages" : "Изменить проценты")]
             public bool ModifyPercentages = false;
             [JsonProperty(EN ? "Tier Percentages (100 in total)" : "Проценты Тиров (всего 100)")]
-            public TierSettings Tier = new TierSettings();
-            [JsonProperty(EN ? "Bioms Percentages (100 in total)" : "Проценты Биомов (всего 100)")]
-            public BiomSettings Biom = new BiomSettings();
+            public TierSettings Tier = new ();
+            [JsonProperty(EN ? "Bioms Percentages (100 in total) - idk why jungle 70%" : "Проценты Биомов (всего 100) - хз почему джунги 70%")]
+            public BiomSettings Biom = new ();
         }
 
         public sealed class SwapSettings {
@@ -91,7 +93,7 @@ namespace CustomGenerator
             [JsonProperty(EN ? "Enabled" : "Включить")]
             public bool Enabled = false;
             [JsonProperty(EN ? "MonumentList" : "Лист монументов")]
-            public List<Monument> monuments = new List<Monument>();
+            public List<Monument> monuments = new ();
         }
 
         public class Monument {
@@ -148,6 +150,10 @@ namespace CustomGenerator
             public float Tier0 = 30f;
             public float Tier1 = 30f;
             public float Tier2 = 40f;
+
+            [NonSerialized] public readonly float DefaultTier0 = 40f;
+            [NonSerialized] public readonly float DefaultTier1 = 15f;
+            [NonSerialized] public readonly float DefaultTier2 = 15f;
         }
 
         public sealed class BiomSettings {
@@ -155,6 +161,13 @@ namespace CustomGenerator
             public float Temperate = 15f;
             public float Tundra = 15f;
             public float Arctic = 30f;
+            public float Jungle = 70f;
+
+            [NonSerialized] public readonly float DefaultArid = 40f;
+            [NonSerialized] public readonly float DefaultTemperate = 15f;
+            [NonSerialized] public readonly float DefaultTundra = 15f;
+            [NonSerialized] public readonly float DefaultArctic = 30f;
+            [NonSerialized] public readonly float DefaultJungle = 70f;
         }
 
         public sealed class TempData {
@@ -170,14 +183,12 @@ namespace CustomGenerator
         private static void LoadConfig() {
             tempData = new TempData();
 
-            if (!Directory.Exists("HarmonyConfig")) 
-            {
+            if (!Directory.Exists("HarmonyConfig")) {
                 Directory.CreateDirectory("HarmonyConfig");
                 Logging.Info("Created HarmonyConfig directory");
             }
             
-            if (!File.Exists(Location)) 
-            {
+            if (!File.Exists(Location))  {
                 Logging.Info("Config file not found, creating default configuration");
                 LoadDefaultConfig();
                 return;

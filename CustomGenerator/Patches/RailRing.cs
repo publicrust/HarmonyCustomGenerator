@@ -1,4 +1,4 @@
-﻿using CustomGenerator.Utilities;
+﻿using CustomGenerator.Utility;
 using HarmonyLib;
 using System.Collections.Generic;
 using System.Linq;
@@ -19,6 +19,7 @@ namespace CustomGenerator.Generators
             if (!Config.Generator.Rail.Enabled) {
                 MinSize(__instance) = int.MaxValue;
                 Logging.Generation($"RailRing MinWorldSize changed to max!");
+                return;
             }
             if (!Config.Generator.Rail.GenerateRing) return;
 
@@ -30,7 +31,7 @@ namespace CustomGenerator.Generators
             
             List<CodeInstruction> list = instructions.ToList();
             if (!Config.Generator.Rail.GenerateRing || !Config.Generator.Rail.ShouldChange) return list;
-
+            
 
             for (int i = 0; i < list.Count; i++)
             {

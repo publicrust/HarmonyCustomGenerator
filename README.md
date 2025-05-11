@@ -1,12 +1,14 @@
 # Custom Rust Map Generator (Harmony 2.3)
 ![Static Badge](https://img.shields.io/badge/Harmony-2.3-blue?style=for-the-badge)
-![Static Badge](https://img.shields.io/github/license/hammzat/HarmonyCustomGenerator?label=license&style=for-the-badge)
+![GitHub Downloads (all assets, all releases)](https://img.shields.io/github/downloads/hammzat/HarmonyCustomGenerator/total?style=for-the-badge&color=blue)
 [![Boosty](https://img.shields.io/badge/Support%20on-Boosty-orange?style=for-the-badge)](https://boosty.to/aristocratos)
 
 Allows you to generate semi-custom maps on default Rust generator.
 
-For installation and usage instructions, see [USAGE.md](USAGE.md)
+For installation and usage instructions, see [USAGE.md](USAGE.md).
 
+For help, report issue and etc. join [our discord](https://discord.gg/xUdpkm8RUS).
+ 
 ### Features
 
 1. QoL (Quality of Life)
@@ -62,7 +64,7 @@ Configure all features at `HarmonyConfig/CustomGeneratorCFG.json`
 ------
 ### Authors and Credits
 - [@aristocratos](https://github.com/hammzat)
-  - For support DM me on Discord - aristocratos
+  - For support join to [discord server](https://discord.gg/xUdpkm8RUS)
  
 Thanks to:
 - bmgjet

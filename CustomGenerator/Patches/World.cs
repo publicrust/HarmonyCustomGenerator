@@ -1,4 +1,4 @@
-﻿using CustomGenerator.Utilities;
+﻿using CustomGenerator.Utility;
 using HarmonyLib;
 using System;
 using System.IO;
@@ -35,7 +35,7 @@ namespace CustomGenerator.Generators
     public static class World_getSize {
         public static void Postfix(ref uint __result) {
             if (!Config.mapSettings.OverrideSizes) return;
-            if (tempData.mapsize == 0) { Debug.Log("map size == 0!"); return; }
+            if (tempData.mapsize == 0) { Logging.Info("map size == 0!"); return; }
             __result = tempData.mapsize;
         }
     }
