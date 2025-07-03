@@ -101,17 +101,9 @@ namespace CustomGenerator
             public bool Generate;
             public string Description;
             public string Folder;
-
+            public int MinDistance = 500;
             public int MinWorldSize = 0;
             public int TargetCount = 0;
-
-            [JsonConverter(typeof(StringEnumConverter))]
-            public PlaceMonuments.DistanceMode distanceSame = PlaceMonuments.DistanceMode.Max;
-            public int MinDistanceSameType = 500;
-
-            [JsonConverter(typeof(StringEnumConverter))]
-            public PlaceMonuments.DistanceMode distanceDifferent = PlaceMonuments.DistanceMode.Any;
-            public int MinDistanceDifferentType = 0;
 
             public SpawnFilterCfg Filter = new SpawnFilterCfg();
         }

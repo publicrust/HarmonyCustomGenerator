@@ -1,4 +1,4 @@
-﻿using HarmonyLib;
+﻿using Harmony;
 using System.Reflection;
 using CustomGenerator.Utility;
 using UnityEngine;
@@ -6,7 +6,6 @@ using System;
 using System.IO;
 
 using static CustomGenerator.ExtConfig;
-using CustomGenerator.Utility;
 namespace CustomGenerator.Patches {
 
     [HarmonyPatch]

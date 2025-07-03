@@ -1,6 +1,5 @@
 ﻿using CustomGenerator.Utility;
-using CustomGenerator.Utility;
-using HarmonyLib;
+using Harmony;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -16,12 +15,13 @@ namespace CustomGenerator.Generators
 
     [HarmonyPatch]
     class PlaceMonuments_Process {
-        private static AccessTools.FieldRef<PlaceMonuments, PlaceMonuments.DistanceMode> DistanceDifferentType = AccessTools.FieldRefAccess<PlaceMonuments, PlaceMonuments.DistanceMode>("DistanceDifferentType");
-        private static AccessTools.FieldRef<PlaceMonuments, PlaceMonuments.DistanceMode> DistanceSameType = AccessTools.FieldRefAccess<PlaceMonuments, PlaceMonuments.DistanceMode>("DistanceSameType");
+        //private static AccessTools.FieldRef<PlaceMonuments, PlaceMonuments.DistanceMode> DistanceDifferentType = AccessTools.FieldRefAccess<PlaceMonuments, PlaceMonuments.DistanceMode>("DistanceDifferentType");
+        //private static AccessTools.FieldRef<PlaceMonuments, PlaceMonuments.DistanceMode> DistanceSameType = AccessTools.FieldRefAccess<PlaceMonuments, PlaceMonuments.DistanceMode>("DistanceSameType");
         private static AccessTools.FieldRef<PlaceMonuments, int> TargetCount = AccessTools.FieldRefAccess<PlaceMonuments, int>("TargetCount");
+        private static AccessTools.FieldRef<PlaceMonuments, int> MinDistance = AccessTools.FieldRefAccess<PlaceMonuments, int>("MinDistance");
         private static AccessTools.FieldRef<PlaceMonuments, int> MinWorldSize = AccessTools.FieldRefAccess<PlaceMonuments, int>("MinWorldSize");
-        private static AccessTools.FieldRef<PlaceMonuments, int> MinDistanceDifferentType = AccessTools.FieldRefAccess<PlaceMonuments, int>("MinDistanceDifferentType");
-        private static AccessTools.FieldRef<PlaceMonuments, int> MinDistanceSameType = AccessTools.FieldRefAccess<PlaceMonuments, int>("MinDistanceSameType");
+        //private static AccessTools.FieldRef<PlaceMonuments, int> MinDistanceDifferentType = AccessTools.FieldRefAccess<PlaceMonuments, int>("MinDistanceDifferentType");
+        //private static AccessTools.FieldRef<PlaceMonuments, int> MinDistanceSameType = AccessTools.FieldRefAccess<PlaceMonuments, int>("MinDistanceSameType");
 
         private static MethodBase TargetMethod() { return AccessTools.Method(typeof(PlaceMonuments), nameof(PlaceMonuments.Process)); }
         private static bool Prefix(PlaceMonuments __instance) {
@@ -69,11 +69,12 @@ namespace CustomGenerator.Generators
             if (!monument.ShouldChange) return true;
             if (!monument.Generate) return false;
 
-            DistanceDifferentType(__instance) = monument.distanceDifferent;
-            DistanceSameType(__instance) = monument.distanceSame;
-            MinDistanceDifferentType(__instance) = monument.MinDistanceDifferentType;
-            MinDistanceSameType(__instance) = monument.MinDistanceSameType;
+            //DistanceDifferentType(__instance) = monument.distanceDifferent;
+            //DistanceSameType(__instance) = monument.distanceSame;
+            //MinDistanceDifferentType(__instance) = monument.MinDistanceDifferentType;
+            //MinDistanceSameType(__instance) = monument.MinDistanceSameType;
 
+            MinDistance(__instance) = monument.MinDistance;
             TargetCount(__instance) = monument.TargetCount;
             MinWorldSize(__instance) = monument.MinWorldSize;
 
@@ -119,13 +120,14 @@ namespace CustomGenerator.Generators
             foreach (var mon in placeMonuments) {
                 Config.Monuments.monuments.Add(new ExtConfig.Monument { 
                     Description = mon.Description, 
-                    Folder = mon.ResourceFolder, 
-                    distanceDifferent = mon.DistanceDifferentType, 
-                    distanceSame = mon.DistanceSameType, 
-                    MinDistanceDifferentType = mon.MinDistanceDifferentType, 
-                    MinDistanceSameType = mon.MinDistanceSameType,
-                    TargetCount = mon.TargetCount,
+                    Folder = mon.ResourceFolder,
+                    // distanceDifferent = mon.DistanceDifferentType, 
+                    // distanceSame = mon.DistanceSameType, 
+                    //MinDistanceDifferentType = mon.MinDistanceDifferentType, 
+                    //MinDistanceSameType = mon.MinDistanceSameType,
+                    MinDistance = mon.MinDistance,
                     MinWorldSize = mon.MinWorldSize,
+                    TargetCount = mon.TargetCount,
                     Filter = new SpawnFilterCfg
                     {
                         Enabled = true,

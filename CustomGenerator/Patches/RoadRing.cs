@@ -1,5 +1,5 @@
 using CustomGenerator.Utility;
-using HarmonyLib;
+using Harmony;
 using System.Collections.Generic;
 using System.Linq;
 using System.Reflection;
@@ -80,13 +80,13 @@ namespace CustomGenerator.Generators {
     {
         private static MethodBase TargetMethod() { return AccessTools.Method(typeof(GenerateRoadTopology), "Process"); }
         private static AccessTools.FieldRef<TerrainTopologyMap, int> _res = AccessTools.FieldRefAccess<TerrainTopologyMap, int>("res");
-        private static AccessTools.FieldRef<TerrainTopologyMap, NativeArray<int>> _dst = AccessTools.FieldRefAccess<TerrainTopologyMap, NativeArray<int>>("dst");
+        private static AccessTools.FieldRef<TerrainTopologyMap, int[]> _dst = AccessTools.FieldRefAccess<TerrainTopologyMap, int[]>("dst");
 
         private static void Postfix() {
             if (!Config.Generator.AllowRoadBuild) return;
             TerrainHeightMap heightmap = TerrainMeta.HeightMap;
             TerrainTopologyMap topomap = TerrainMeta.TopologyMap;
-            NativeArray<int> map = _dst(topomap);
+            int[] map = _dst(topomap);
             int res = _res(topomap);
 
             ImageProcessing.Dilate2D(map, res, res, TerrainTopology.ROAD, 1, delegate (int x, int y) {

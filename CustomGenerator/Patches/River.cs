@@ -3,7 +3,7 @@ using System;
 using System.Reflection;
 using System.Reflection.Emit;
 using CustomGenerator.Utility;
-using HarmonyLib;
+using Harmony;
 using static CustomGenerator.ExtConfig;
 using System.Linq;
 
