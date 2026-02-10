@@ -130,7 +130,7 @@ namespace CustomGenerator.Generators
                         BiomeType   = GetFilterValue(mon.Filter.BiomeType),
                         SplatType   = GetFilterValue(mon.Filter.SplatType),
                     },
-                    Generate = true, ShouldChange = true,
+                    Generate = true, ShouldChange = false,
                 });
             }
             SaveConfig();

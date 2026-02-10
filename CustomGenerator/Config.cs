@@ -12,13 +12,11 @@ namespace CustomGenerator
         public const bool EN = true;
         public static ConfigData Config;
         public static TempData tempData;
-        private static readonly string CurrentVersion = "0.2.1";
+        private static readonly string CurrentVersion = "0.2.2";
 
         private static readonly string Location = Path.Combine("HarmonyConfig", "CustomGenerator.json");
 
-        static ExtConfig() {
-            LoadConfig();
-        }
+        static ExtConfig() => LoadConfig();
 
         public class ConfigData {
             [JsonProperty(EN ? "Map Settings" : "Настройки Карты")]
@@ -45,7 +43,7 @@ namespace CustomGenerator
             [JsonProperty(EN ? "Override Map Name" : "Перезаписать название карты")]
             public bool OverrideName = true;
             [JsonProperty(EN ? "Map Name ({0} - size, {1} - seed)" : "Название карты ({0} - размер, {1} - сид)")]
-            public string MapName = "CustomMap{0}_{1}.CGEN";
+            public string MapName = "CustomGenerator{0}_{1}";
         }
 
         public sealed class GeneratorSettings {

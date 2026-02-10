@@ -18,9 +18,8 @@ using static CustomGenerator.ExtConfig;
 using CustomGenerator.Utility;
 using System.Diagnostics;
 using System.Threading.Tasks;
+
 namespace CustomGenerator.Utility {
-    // я честно не ебу что тут понаписал, но работает
-    // upd. я ебу
     static class MapImage
     {
         private static Dictionary<string, string> RequirementResources = new Dictionary<string, string>() {
@@ -104,7 +103,6 @@ namespace CustomGenerator.Utility {
             public Bitmap ToBitmap()
             {
                 Bitmap bitmap = new Bitmap(_width, _height);
-
                 for (int y = 0; y < _height; y++)
                 {
                     for (int x = 0; x < _width; x++)
@@ -113,39 +111,136 @@ namespace CustomGenerator.Utility {
                         bitmap.SetPixel(x, y, color.ToSystemDrawingColor());
                     }
                 }
-
                 return bitmap;
             }
 
-            public bool IsEmpty()
-            {
-                return _items == null || _width == 0 && _height == 0;
-            }
-
-            public Array2D<T> Clone()
-            {
-                return new Array2D<T>((T[])_items.Clone(), _width, _height);
-            }
-
+            public bool IsEmpty() => _items == null || _width == 0 && _height == 0;
+            public Array2D<T> Clone() => new Array2D<T>((T[])_items.Clone(), _width, _height);
         }
 
-        private class MapMonument
-        {
+        private class MapMonument {
             public string name;
             public int x = 0;
             public int y = 0;
-
             public Indication indication = Indication.None;
             public string imagePath = "";
         }
-        private enum Indication
-        {
-            None = 0,
-            Regular,
-            Smaller,
-            Image
-        }
+        private enum Indication { None = 0, Regular, Smaller, Image }
+
         private static FieldInfo _monuments = AccessTools.TypeByName("TerrainPath").GetField("Monuments", BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic);
+
+        public static byte[] Render(out int imageWidth, out int imageHeight, out Color background, float scale = 0.5f, bool lossy = true, bool transparent = false, int oceanMargin = 500) {
+            Logging.Info("-/6 | Starting rendering map...");
+            Stopwatch stopwatch = Stopwatch.StartNew();
+
+            if (lossy && transparent)
+                throw new ArgumentException("Rendering a transparent map is not possible when using lossy compression (JPG)");
+
+            imageWidth = 0;
+            imageHeight = 0;
+            background = OffShoreColor;
+
+            TerrainTexturing instance = TerrainTexturing.Instance;
+            if (instance == null) return null;
+
+            Terrain component = instance.GetComponent<Terrain>();
+            TerrainMeta component2 = instance.GetComponent<TerrainMeta>();
+            TerrainHeightMap terrainHeightMap = instance.GetComponent<TerrainHeightMap>();
+            TerrainSplatMap terrainSplatMap = instance.GetComponent<TerrainSplatMap>();
+            TerrainTopologyMap terrainTopologyMap = instance.GetComponent<TerrainTopologyMap>();
+
+            if (component == null || component2 == null || terrainHeightMap == null || terrainSplatMap == null || terrainTopologyMap == null)
+                return null;
+
+            int mapRes = (int)((float)World.Size * Mathf.Clamp(scale, 0.1f, 4f));
+            float invMapRes = 1f / (float)mapRes;
+
+            if (mapRes <= 0) return null;
+
+            imageWidth = mapRes + oceanMargin * 2;
+            imageHeight = mapRes + oceanMargin * 2;
+
+            Color[] array = new Color[imageWidth * imageHeight];
+            Array2D<Color> output = new Array2D<Color>(array, imageWidth, imageHeight);
+
+            float maxDepth = (transparent ? Mathf.Max(Mathf.Abs(GetHeight(0f, 0f)), 5f) : 50f);
+            Vector4 offShoreColor = (transparent ? Vector4.zero : OffShoreColor);
+            Vector4 waterColor = (transparent ? new Vector4(WaterColor.x, WaterColor.y, WaterColor.z, 0.5f) : WaterColor);
+
+            Logging.Info("1/6 | Render begin...");
+
+            Parallel.For(0, imageHeight, delegate (int y) {
+                y -= oceanMargin;
+                float y2 = (float)y * invMapRes;
+                int num = mapRes + oceanMargin;
+
+                for (int i = -oceanMargin; i < num; i++)
+                {
+                    float x2 = (float)i * invMapRes;
+                    Vector4 startColor = StartColor;
+
+                    float height = GetHeight(x2, y2);
+                    Vector3 normal = GetNormal(x2, y2);
+                    float shoreDist = GetShoreDist(x2, y2);
+                    bool flag = (GetTopology(x2, y2) & 0x180) != 0;
+
+                    float light = Math.Max(Vector3.Dot(normal, SunDirection), 0f);
+
+                    startColor = Vector4.Lerp(startColor, GravelColor, GetSplat(x2, y2, 128) * GravelColor.w);
+                    startColor = Vector4.Lerp(startColor, PebbleColor, GetSplat(x2, y2, 64) * PebbleColor.w);
+                    startColor = Vector4.Lerp(startColor, RockColor, GetSplat(x2, y2, 8) * RockColor.w);
+                    startColor = Vector4.Lerp(startColor, DirtColor, GetSplat(x2, y2, 1) * DirtColor.w);
+                    startColor = Vector4.Lerp(startColor, GrassColor, GetSplat(x2, y2, 16) * GrassColor.w);
+                    startColor = Vector4.Lerp(startColor, ForestColor, GetSplat(x2, y2, 32) * ForestColor.w);
+                    startColor = Vector4.Lerp(startColor, SandColor, GetSplat(x2, y2, 4) * SandColor.w);
+                    startColor = Vector4.Lerp(startColor, SnowColor, GetSplat(x2, y2, 2) * SnowColor.w);
+
+                    float waterFactor = 0f;
+                    if (shoreDist > 0f)
+                    {
+                        waterFactor = 0f - height;
+                        if (waterFactor <= 0f || !flag)
+                        {
+                            waterFactor = Mathf.Max(waterFactor, 0.1f * shoreDist);
+                        }
+                    }
+
+                    if (waterFactor > 0f) {
+                        startColor = Vector4.Lerp(startColor, waterColor, Mathf.Clamp(0.5f + waterFactor / 5f, 0f, 1f));
+                        startColor = Vector4.Lerp(startColor, offShoreColor, Mathf.Clamp(waterFactor / maxDepth, 0f, 1f));
+                    }
+                    else {
+                        startColor += (light - 0.5f) * 0.65f * startColor;
+                        startColor = (startColor - Half) * 0.94f + Half;
+                    }
+
+                    startColor *= 1.05f;
+
+                    output[i + oceanMargin, y + oceanMargin] = (transparent
+                        ? new Color(startColor.x, startColor.y, startColor.z, startColor.w)
+                        : new Color(startColor.x, startColor.y, startColor.z));
+                }
+            });
+
+            background = output[0, 0];
+
+            LoadIcons(ref output, imageWidth, imageHeight, mapRes, oceanMargin);
+            RenderGrid(ref output, mapRes, imageWidth, oceanMargin);
+
+            Logging.Info($"  - Render took {stopwatch.Elapsed.Seconds}s.");
+            Logging.Info("6/6 | Done! Encoding...");
+            stopwatch.Stop();
+
+            return EncodeToFile(imageWidth, imageHeight, array, lossy);
+
+            float GetHeight(float x, float y) => terrainHeightMap.GetHeight(x, y);
+            Vector3 GetNormal(float x, float y) => terrainHeightMap.GetNormal(x, y);
+            float GetSplat(float x, float y, int mask) => terrainSplatMap.GetSplat(x, y, mask);
+            int GetTopology(float x, float y) => terrainTopologyMap.GetTopology(x, y, 16f);
+        }
+
+        static float GetShoreDist(float x, float y) => TerrainTexturing.Instance.GetMainlandCoarseVectorToShore(x, y).shoreDist;
+
         private static void LoadIcons(ref Array2D<Color> output, int imageWidth, int imageHeight, int mapResolution, int oceanMargin) {
             List<MonumentInfo> monuments = (List<MonumentInfo>)_monuments.GetValue(tempData.terrainPath);
             Logging.Info("3/4 | Proceeding map data...");
@@ -157,43 +252,23 @@ namespace CustomGenerator.Utility {
             foreach (MonumentInfo monument in monuments)
             {
                 string name = GetMonumentName(monument);
-                
                 Vector3 position = monument.transform.position;
-                //Debug.Log(name);
 
                 int x = (int)(((position.x + (tempData.mapsize / 2.0)) / tempData.mapsize) * mapResolution) + originalMapOffset;
                 int z = (int)(((position.z + (tempData.mapsize / 2.0)) / tempData.mapsize) * mapResolution) + originalMapOffset;
 
-                if (name.ToLower().Contains("train")) { mapMonuments.Add(new MapMonument { name = name, x = x, y = z, indication = Indication.Image }); continue; } //
+                if (name.ToLower().Contains("train")) { mapMonuments.Add(new MapMonument { name = name, x = x, y = z, indication = Indication.Image }); continue; }
 
                 if (monument.shouldDisplayOnMap && monument.mapIcon == null)
                     mapMonuments.Add(new MapMonument { name = name, x = x, y = z, indication = Indication.Regular });
                 else
                     mapMonuments.Add(new MapMonument { name = name, x = x, y = z, indication = Indication.None });
-
-                //RenderText(name, PermanentMarkerFont 9, System.Drawing.Color.Black, ref output, x, z);
             }
 
-            //RenderDebug(ref output, imageWidth, originalMapOffset, originalMap);
             RenderMonument(mapMonuments, PermanentMarkerFont, ref output);
             RenderGithub(DinProFontBold, ref output, mapResolution, imageWidth);
         }
-        private static void RenderDebug(ref Array2D<Color> output, int imageRes, int originalMapOffset, int originalMap) {
-            for (int i = 0; i < 20; i++)
-            {
-                for (int j = 0; j < 20; j++)
-                {
-                    output[i, j] = Color.black;
-                    output[imageRes - i, imageRes - j] = Color.cyan;
 
-                    output[imageRes - i, j] = Color.magenta;
-                    output[i, imageRes - j] = Color.grey;
-
-                    output[originalMapOffset + i, originalMapOffset + j] = Color.black;
-                    output[originalMap + i, originalMap + j] = Color.cyan;
-                }
-            }
-        }
         private static void RenderText(string text, string fontPath, int fontSize, System.Drawing.Color color, ref Array2D<Color> output, int xx, int zz)
         {
             Bitmap bitmap = output.ToBitmap();
@@ -234,7 +309,7 @@ namespace CustomGenerator.Utility {
 
         private static void RenderGithub(string fontPath, ref Array2D<Color> output, int mapResolution, int imageResolution) {
             var color = System.Drawing.Color.WhiteSmoke;
-            var text = "github.com/hammzat/HarmonyCustomGenerator - Jungle Update [by aristocratos]";
+            var text = "github.com/publicrust/HarmonyCustomGenerator - DeepSea Update [by aristocratos]";
 
             float scaleFactor = 0.04f;
             int fontSize = Mathf.Clamp((int)(imageResolution * scaleFactor), 10, 30);
@@ -243,7 +318,6 @@ namespace CustomGenerator.Utility {
                 using (var dummyImage = new Bitmap(1, 1))
                 using (var g = Graphics.FromImage(dummyImage)) {
                     SizeF textSize = g.MeasureString(text, font);
-                    int textWidth = (int)textSize.Width;
                     int textHeight = (int)textSize.Height;
 
                     int x = imageResolution / 2;
@@ -253,7 +327,6 @@ namespace CustomGenerator.Utility {
                 }
             }
         }
-
 
         private static void RenderMonument(List<MapMonument> monuments, string fontPath, ref Array2D<Color> output) {
             Logging.Info("3/4 | Rendering monuments...");
@@ -267,7 +340,6 @@ namespace CustomGenerator.Utility {
                 var y = monument.y;
                 var text = monument.name;
                 int fontSize = monument.indication == Indication.Regular ? 20 : 11;
-                var imagePath = monument.imagePath;
 
                 RenderText(text, fontPath, fontSize, color, ref output, x, y);
             }
@@ -277,7 +349,7 @@ namespace CustomGenerator.Utility {
             Logging.Info("4/6 | Rendering grid...");
             var gridColor = System.Drawing.Color.FromArgb(120, 0, 0, 0);
             var bitmap = output.ToBitmap();
-            
+
             using (Graphics graphics = Graphics.FromImage(bitmap)) {
                 graphics.SmoothingMode = System.Drawing.Drawing2D.SmoothingMode.AntiAlias;
 
@@ -292,7 +364,7 @@ namespace CustomGenerator.Utility {
                             graphics.DrawLine(gridPen, x, oceanMargin, x, imageWidth - oceanMargin);
                         }
                     }
-                    
+
                     for (int i = 0; i <= gridCount; i++) {
                         float y = oceanMargin + (i * cellSize);
                         if (y >= oceanMargin && y <= imageWidth - oceanMargin) {
@@ -347,103 +419,8 @@ namespace CustomGenerator.Utility {
             }
         }
 
-        public static byte[] Render(out int imageWidth, out int imageHeight, out Color background, float scale = 0.5f, bool lossy = true, bool transparent = false, int oceanMargin = 500) {
-            Logging.Info("0/6 | Starting rendering map...");
-            Stopwatch stopwatch = new();
-            stopwatch.Start();
-            if (lossy && transparent)
-                throw new ArgumentException("Rendering a transparent map is not possible when using lossy compression (JPG)");
-
-            imageWidth = 0;
-            imageHeight = 0;
-            background = OffShoreColor;
-            TerrainTexturing instance = TerrainTexturing.Instance;
-
-            if (instance == null)
-                return null;
-
-            Terrain component = instance.GetComponent<Terrain>();
-            TerrainMeta component2 = instance.GetComponent<TerrainMeta>();
-            TerrainHeightMap terrainHeightMap = instance.GetComponent<TerrainHeightMap>();
-            TerrainSplatMap terrainSplatMap = instance.GetComponent<TerrainSplatMap>();
-            TerrainTopologyMap terrainTopologyMap = instance.GetComponent<TerrainTopologyMap>();
-
-            if (component == null || component2 == null || terrainHeightMap == null || terrainSplatMap == null || terrainTopologyMap == null)
-                return null;
-            
-            int mapRes = (int)((float)World.Size * Mathf.Clamp(scale, 0.1f, 4f));
-            float invMapRes = 1f / (float)mapRes;
-
-            if (mapRes <= 0)
-                return null;
-
-            imageWidth = mapRes + oceanMargin * 2;
-            imageHeight = mapRes + oceanMargin * 2;
-            Color[] array = new Color[imageWidth * imageHeight];
-            Array2D<Color> output = new Array2D<Color>(array, imageWidth, imageHeight);
-            float maxDepth = (transparent ? Mathf.Max(Mathf.Abs(GetHeight(0f, 0f)), 5f) : 50f);
-            Vector4 offShoreColor = (transparent ? Vector4.zero : OffShoreColor);
-            Vector4 waterColor = (transparent ? new Vector4(WaterColor.x, WaterColor.y, WaterColor.z, 0.5f) : WaterColor);
-            Logging.Info("1/6 | Render begin...");
-            Parallel.For(0, imageHeight, delegate (int y) {
-                y -= oceanMargin;
-                float y2 = (float)y * invMapRes;
-                int num = mapRes + oceanMargin;
-                for (int i = -oceanMargin; i < num; i++) {
-                    float x2 = (float)i * invMapRes;
-                    Vector4 startColor = StartColor;
-                    float num2 = GetHeight(x2, y2);
-                    Vector3 lhs = GetNormal(x2, y2);
-                    float num3 = GetShoreDist(x2, y2);
-                    bool flag = (GetTopology(x2, y2) & 0x180) != 0;
-                    float num4 = Math.Max(Vector3.Dot(lhs, SunDirection), 0f);
-                    startColor = Vector4.Lerp(startColor, GravelColor, GetSplat(x2, y2, 128) * GravelColor.w);
-                    startColor = Vector4.Lerp(startColor, PebbleColor, GetSplat(x2, y2, 64) * PebbleColor.w);
-                    startColor = Vector4.Lerp(startColor, RockColor, GetSplat(x2, y2, 8) * RockColor.w);
-                    startColor = Vector4.Lerp(startColor, DirtColor, GetSplat(x2, y2, 1) * DirtColor.w);
-                    startColor = Vector4.Lerp(startColor, GrassColor, GetSplat(x2, y2, 16) * GrassColor.w);
-                    startColor = Vector4.Lerp(startColor, ForestColor, GetSplat(x2, y2, 32) * ForestColor.w);
-                    startColor = Vector4.Lerp(startColor, SandColor, GetSplat(x2, y2, 4) * SandColor.w);
-                    startColor = Vector4.Lerp(startColor, SnowColor, GetSplat(x2, y2, 2) * SnowColor.w);
-                    float num5 = 0f;
-                    if (num3 > 0f) {
-                        num5 = 0f - num2;
-                        if (num5 <= 0f || !flag) {
-                            num5 = Mathf.Max(num5, 0.1f * num3);
-                        }
-                    }
-                    if (num5 > 0f) {
-                        startColor = Vector4.Lerp(startColor, waterColor, Mathf.Clamp(0.5f + num5 / 5f, 0f, 1f));
-                        startColor = Vector4.Lerp(startColor, offShoreColor, Mathf.Clamp(num5 / maxDepth, 0f, 1f));
-                    }
-                    else {
-                        startColor += (num4 - 0.5f) * 0.65f * startColor;
-                        startColor = (startColor - Half) * 0.94f + Half;
-                    }
-                    startColor *= 1.05f;
-                    output[i + oceanMargin, y + oceanMargin] = (transparent ? new Color(startColor.x, startColor.y, startColor.z, startColor.w) : new Color(startColor.x, startColor.y, startColor.z));
-                }
-            });
-            background = output[0, 0];
-
-            LoadIcons(ref output, imageWidth, imageHeight, mapRes, oceanMargin);
-            RenderGrid(ref output, mapRes, imageWidth, oceanMargin);
-            Logging.Info($"  - Render took {stopwatch.Elapsed.Seconds}s.");
-            Logging.Info("6/6 | Done! Encoding...");
-            stopwatch.Stop();
-            
-            return EncodeToFile(imageWidth, imageHeight, array, lossy);
-
-            float GetHeight(float x, float y) => terrainHeightMap.GetHeight(x, y);
-            Vector3 GetNormal(float x, float y) => terrainHeightMap.GetNormal(x, y);
-            float GetShoreDist(float x, float y) => TerrainTexturing.Instance.GetCoarseVectorToShore(x, y).shoreDist;
-            float GetSplat(float x, float y, int mask) => terrainSplatMap.GetSplat(x, y, mask);
-            int GetTopology(float x, float y) => terrainTopologyMap.GetTopology(x, y, 16f);
-        }
-
         private static byte[] EncodeToFile(int width, int height, Color[] pixels, bool lossy) {
-            Stopwatch stopwatch = new();
-            stopwatch.Start();
+            Stopwatch stopwatch = Stopwatch.StartNew();
             Texture2D texture2D = null;
             try {
                 texture2D = new Texture2D(width, height, TextureFormat.RGBA32, mipChain: false);
@@ -454,14 +431,13 @@ namespace CustomGenerator.Utility {
             finally {
                 if (texture2D != null) 
                     UnityEngine.Object.Destroy(texture2D);
-
                 stopwatch.Stop();
                 Logging.Info($"  - Encoding took {stopwatch.Elapsed.Seconds}s.");
             }
         }
 
         public static string GetMonumentName(MonumentInfo monument) {
-            string name = monument.displayPhrase.english.Replace("\n", "");
+            string name = monument?.displayPhrase?.english?.Replace("\n", "");
             if (string.IsNullOrEmpty(name)) {
                 if (monument.Type == MonumentType.Cave) name = "Cave";
                 else if (monument.name.Contains("power_sub")) name = "Power Sub Station";
@@ -471,6 +447,7 @@ namespace CustomGenerator.Utility {
             return name;
         }
     }
+
     public static class ColorExtensions
     {
         public static System.Drawing.Color ToSystemDrawingColor(this Color unityColor)
