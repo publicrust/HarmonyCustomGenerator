@@ -12,7 +12,7 @@ namespace CustomGenerator
         public const bool EN = true;
         public static ConfigData Config;
         public static TempData tempData;
-        private static readonly string CurrentVersion = "0.2.2";
+        private static readonly string CurrentVersion = "0.2.3";
 
         private static readonly string Location = Path.Combine("HarmonyConfig", "CustomGenerator.json");
 

@@ -29,7 +29,7 @@ namespace CustomGenerator.Patches {
 
     [HarmonyPatch]
     internal static class LoadingScreen_Update {
-        private static MethodBase TargetMethod() { return AccessTools.Method(typeof(LoadingScreen), "Update", new Type[] { typeof(string) }); }
+        private static MethodBase TargetMethod() { return AccessTools.Method(typeof(UI_LoadingScreen), "Update", new Type[] { typeof(string) }); }
         private static void Prefix(ref string strType) {
             if (tempData.terrainTexturing == null || strType != "DONE")  return;
             Logging.Info($"SIZE: {tempData.mapsize} | SEED: {tempData.mapseed}");
