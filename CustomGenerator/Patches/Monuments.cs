@@ -75,10 +75,10 @@ namespace CustomGenerator.Generators
             if (monument.Filter.Enabled) {
                 __instance.Filter = new SpawnFilter {
                     BiomeType =   monument.Filter.BiomeType.Count == 0 ? (TerrainBiome.Enum)(-1) :    (TerrainBiome.Enum)EnumParser.GetFilterEnum("BiomeType", monument.Filter.BiomeType),
-                    SplatType =   monument.Filter.BiomeType.Count == 0 ? (TerrainSplat.Enum)(-1) :    (TerrainSplat.Enum)EnumParser.GetFilterEnum("SplatType", monument.Filter.SplatType),
-                    TopologyAll = monument.Filter.BiomeType.Count == 0 ? (TerrainTopology.Enum)(0) :  (TerrainTopology.Enum)EnumParser.GetFilterEnum("TopologyAll", monument.Filter.TopologyAll),
-                    TopologyAny = monument.Filter.BiomeType.Count == 0 ? (TerrainTopology.Enum)(-1) : (TerrainTopology.Enum)EnumParser.GetFilterEnum("TopologyAny", monument.Filter.TopologyAny),
-                    TopologyNot = monument.Filter.BiomeType.Count == 0 ? (TerrainTopology.Enum)(0) :  (TerrainTopology.Enum)EnumParser.GetFilterEnum("TopologyNot", monument.Filter.TopologyNot),
+                    SplatType =   monument.Filter.SplatType.Count == 0 ? (TerrainSplat.Enum)(-1) :    (TerrainSplat.Enum)EnumParser.GetFilterEnum("SplatType", monument.Filter.SplatType),
+                    TopologyAll = monument.Filter.TopologyAll.Count == 0 ? (TerrainTopology.Enum)(0) :  (TerrainTopology.Enum)EnumParser.GetFilterEnum("TopologyAll", monument.Filter.TopologyAll),
+                    TopologyAny = monument.Filter.TopologyAny.Count == 0 ? (TerrainTopology.Enum)(-1) : (TerrainTopology.Enum)EnumParser.GetFilterEnum("TopologyAny", monument.Filter.TopologyAny),
+                    TopologyNot = monument.Filter.TopologyNot.Count == 0 ? (TerrainTopology.Enum)(0) :  (TerrainTopology.Enum)EnumParser.GetFilterEnum("TopologyNot", monument.Filter.TopologyNot),
                 };
             }
             //Debug.Log(__instance.TargetCountWorldSizeMultiplier.Evaluate(World.Size));

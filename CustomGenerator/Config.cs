@@ -2,47 +2,53 @@
 using Newtonsoft.Json.Converters;
 using System;
 using System.Collections.Generic;
+using System.Globalization;
 using System.IO;
+using System.Linq;
 using UnityEngine;
 using CustomGenerator.Utility;
+using Newtonsoft.Json.Linq;
 
 namespace CustomGenerator
 {
     public class ExtConfig {
-        public const bool EN = true;
         public static ConfigData Config;
         public static TempData tempData;
-        private static readonly string CurrentVersion = "0.2.4";
+        private static readonly string CurrentVersion = "0.2.5";
 
         private static readonly string Location = Path.Combine("HarmonyConfig", "CustomGenerator.json");
 
         static ExtConfig() => LoadConfig();
 
         public class ConfigData {
-            [JsonProperty(EN ? "Map Settings" : "Настройки Карты")]
+            [JsonProperty("Language (en/ru)", Order = -2)]
+            public string Language = DetectLanguage();
+
+            [Loc("Map Settings", "Настройки Карты")]
             public MapSettings mapSettings = new();
 
-            [JsonProperty(EN ? "Main Generator" : "Основной Генератор")]
+            [Loc("Main Generator", "Основной Генератор")]
             public GeneratorSettings Generator = new();
 
-            [JsonProperty(EN ? "Swap Monuments" : "Замена Монументов")]
+            [Loc("Swap Monuments", "Замена Монументов")]
             public SwapSettings Swap = new();
 
-            [JsonProperty(EN ? "Monuments" : "Монументы")]
+            [Loc("Monuments", "Монументы")]
             public MonumentSettings Monuments = new();
 
+            [JsonProperty(Order = -1)]
             public string Version = CurrentVersion;
         }
         public sealed class MapSettings {
-            [JsonProperty(EN ? "Generate new map everytime" : "Генерировать новую карту каждый раз")]
+            [Loc("Generate new map everytime", "Генерировать новую карту каждый раз")]
             public bool GenerateNewMapEverytime = true;
-            [JsonProperty(EN ? "Override Map Sizes (9000 not be changed to 6000)" : "Принудительный размер карты (карта 9000 не сменится на 6000)")]
+            [Loc("Override Map Sizes (9000 not be changed to 6000)", "Принудительный размер карты (карта 9000 не сменится на 6000)")]
             public bool OverrideSizes = true;
-            [JsonProperty(EN ? "Override Map Folder (saves to <Server Root>/maps/)" : "Перезаписать папку с картой (<папка сервера>/maps/)")]
+            [Loc("Override Map Folder (saves to <Server Root>/maps/)", "Перезаписать папку с картой (<папка сервера>/maps/)")]
             public bool OverrideFolder = true;
-            [JsonProperty(EN ? "Override Map Name" : "Перезаписать название карты")]
+            [Loc("Override Map Name", "Перезаписать название карты")]
             public bool OverrideName = true;
-            [JsonProperty(EN ? "Map Name ({0} - size, {1} - seed)" : "Название карты ({0} - размер, {1} - сид)")]
+            [Loc("Map Name ({0} - size, {1} - seed)", "Название карты ({0} - размер, {1} - сид)")]
             public string MapName = "CustomGenerator{0}_{1}";
         }
 
@@ -51,43 +57,43 @@ namespace CustomGenerator
             public SimplePath Rail = new();
             public UniqueEnviroment UniqueEnviroment = new();
 
-            [JsonProperty(EN ? "Remove Rivers" : "Удалить реки")]
+            [Loc("Remove Rivers", "Удалить реки")]
             public bool RemoveRivers = false;
-            [JsonProperty(EN ? "River width scale (1 = default)" : "Множитель ширины рек (1 = по умолчанию)")]
+            [Loc("River width scale (1 = default)", "Множитель ширины рек (1 = по умолчанию)")]
             public float RiverWidthScale = 1f;
 
-            [JsonProperty(EN ? "Remove Car Wrecks around Road" : "Удалить разбитые префабы машин около дороги")]
+            [Loc("Remove Car Wrecks around Road", "Удалить разбитые префабы машин около дороги")]
             public bool RemoveCarWrecks = false;
-            [JsonProperty(EN ? "Allow building on road" : "Разрешить строительство на дорогах")]
+            [Loc("Allow building on road", "Разрешить строительство на дорогах")]
             public bool AllowRoadBuild = false;
-            [JsonProperty(EN ? "Remove large powerlines" : "Удалить большие ЛЭП")]
+            [Loc("Remove large powerlines", "Удалить большие ЛЭП")]
             public bool RemovePowerlines = false;
-            [JsonProperty(EN ? "Remove tunnel entrances" : "Удалить входы в туннели")]
+            [Loc("Remove tunnel entrances", "Удалить входы в туннели")]
             public bool RemoveTunnelsEntrances = false;
 
-            [JsonProperty(EN ? "Remove underground tunnels (also removes entrances)" : "Удалить подземные туннели (вместе со входами)")]
+            [Loc("Remove underground tunnels (also removes entrances)", "Удалить подземные туннели (вместе со входами)")]
             public bool RemoveTunnels = false;
 
-            [JsonProperty(EN ? "Change percentages" : "Изменить проценты")]
+            [Loc("Change percentages", "Изменить проценты")]
             public bool ModifyPercentages = false;
-            [JsonProperty(EN ? "Tier Percentages (100 in total)" : "Проценты Тиров (всего 100)")]
+            [Loc("Tier Percentages (100 in total)", "Проценты Тиров (всего 100)")]
             public TierSettings Tier = new ();
-            [JsonProperty(EN ? "Bioms Percentages (100 in total) - idk why jungle 70%" : "Проценты Биомов (всего 100) - хз почему джунги 70%")]
+            [Loc("Biome Percentages (Arid+Temperate+Tundra+Arctic = 100, Jungle is separate)", "Проценты Биомов (Пустыня+Умеренный+Тундра+Арктика = 100, Джунгли отдельно)")]
             public BiomSettings Biom = new ();
         }
 
         public sealed class SwapSettings {
-            [JsonProperty(EN ? "Enabled" : "Включить")]
+            [Loc("Enabled", "Включить")]
             public bool Enabled = false;
-            [JsonProperty(EN ? "Save both maps (with swap and without)" : "Сохранить обе карты (с заменой и без)")]
+            [Loc("Save both maps (with swap and without)", "Сохранить обе карты (с заменой и без)")]
             public bool SaveBothMaps = false;
         }
 
         public class MonumentSettings
         {
-            [JsonProperty(EN ? "Enabled" : "Включить")]
+            [Loc("Enabled", "Включить")]
             public bool Enabled = false;
-            [JsonProperty(EN ? "MonumentList" : "Лист монументов")]
+            [Loc("MonumentList", "Лист монументов")]
             public List<Monument> monuments = new ();
         }
 
@@ -145,10 +151,6 @@ namespace CustomGenerator
             public float Tier0 = 30f;
             public float Tier1 = 30f;
             public float Tier2 = 40f;
-
-            [NonSerialized] public readonly float DefaultTier0 = 40f;
-            [NonSerialized] public readonly float DefaultTier1 = 15f;
-            [NonSerialized] public readonly float DefaultTier2 = 15f;
         }
 
         public sealed class BiomSettings {
@@ -156,13 +158,7 @@ namespace CustomGenerator
             public float Temperate = 15f;
             public float Tundra = 15f;
             public float Arctic = 30f;
-            public float Jungle = 70f;
-
-            [NonSerialized] public readonly float DefaultArid = 40f;
-            [NonSerialized] public readonly float DefaultTemperate = 15f;
-            [NonSerialized] public readonly float DefaultTundra = 15f;
-            [NonSerialized] public readonly float DefaultArctic = 30f;
-            [NonSerialized] public readonly float DefaultJungle = 70f;
+            public float Jungle = 50f;
         }
 
         public sealed class TempData {
@@ -175,6 +171,15 @@ namespace CustomGenerator
             public TerrainPath terrainPath;
         }
 
+        private static JsonSerializerSettings SerializerSettings(string language) => new() {
+            ContractResolver = new LocalizedContractResolver(language),
+            ObjectCreationHandling = ObjectCreationHandling.Replace,
+            Formatting = Formatting.Indented,
+        };
+
+        private static string DetectLanguage() =>
+            CultureInfo.CurrentCulture.TwoLetterISOLanguageName == "ru" ? "ru" : "en";
+
         private static void LoadConfig() {
             tempData = new TempData();
 
@@ -182,7 +187,7 @@ namespace CustomGenerator
                 Directory.CreateDirectory("HarmonyConfig");
                 Logging.Info("Created HarmonyConfig directory");
             }
-            
+
             if (!File.Exists(Location))  {
                 Logging.Info("Config file not found, creating default configuration");
                 LoadDefaultConfig();
@@ -190,70 +195,34 @@ namespace CustomGenerator
             }
 
             try {
-                var oldConfig = JsonConvert.DeserializeObject<ConfigData>(File.ReadAllText(Location));
+                string raw = File.ReadAllText(Location);
+                string language = JObject.Parse(raw).Value<string>("Language (en/ru)") ?? DetectLanguage();
 
-                if (oldConfig.Version != CurrentVersion) {
-                    Logging.Config($"Version mismatch! Old: {oldConfig.Version}, Current: {CurrentVersion}");
-                    Logging.Config("Creating backup and migrating settings...");
-                    
-                    string backupPath = Location + $".{oldConfig.Version}.backup";
-                    File.WriteAllText(backupPath, JsonConvert.SerializeObject(oldConfig, Formatting.Indented));
-                    Logging.Config($"Backup created at: {backupPath}");
-                    
-                    Config = new ConfigData();
-                    
-                    if (oldConfig.mapSettings != null) {
-                        Config.mapSettings.GenerateNewMapEverytime = oldConfig.mapSettings.GenerateNewMapEverytime;
-                        Config.mapSettings.OverrideSizes = oldConfig.mapSettings.OverrideSizes;
-                        Config.mapSettings.OverrideFolder = oldConfig.mapSettings.OverrideFolder;
-                        Config.mapSettings.OverrideName = oldConfig.mapSettings.OverrideName;
-                        Config.mapSettings.MapName = oldConfig.mapSettings.MapName;
-                        Logging.Config("Map settings migrated");
-                    }
-                    
-                    if (oldConfig.Generator != null) {
-                        Config.Generator.Road = oldConfig.Generator.Road;
-                        Config.Generator.Rail = oldConfig.Generator.Rail;
-                        Config.Generator.UniqueEnviroment = oldConfig.Generator.UniqueEnviroment;
-                        Config.Generator.RemoveCarWrecks = oldConfig.Generator.RemoveCarWrecks;
-                        Config.Generator.RemoveRivers = oldConfig.Generator.RemoveRivers;
-                        Config.Generator.RiverWidthScale = oldConfig.Generator.RiverWidthScale;
-                        Config.Generator.AllowRoadBuild = oldConfig.Generator.AllowRoadBuild;
-                        Config.Generator.RemovePowerlines = oldConfig.Generator.RemovePowerlines;
-                        Config.Generator.RemoveTunnels = oldConfig.Generator.RemoveTunnels;
-                        Config.Generator.RemoveTunnelsEntrances = oldConfig.Generator.RemoveTunnelsEntrances;
-                        Config.Generator.ModifyPercentages = oldConfig.Generator.ModifyPercentages;
-                        Config.Generator.Tier = oldConfig.Generator.Tier;
-                        Config.Generator.Biom = oldConfig.Generator.Biom;
-                        Logging.Config("Generator settings migrated");
-                    }
-                    
-                    if (oldConfig.Swap != null) {
-                        Config.Swap.Enabled = oldConfig.Swap.Enabled;
-                        Config.Swap.SaveBothMaps = oldConfig.Swap.SaveBothMaps;
-                        Logging.Config("Swap settings migrated");
-                    }
-                    
-                    if (oldConfig.Monuments != null) {
-                        Config.Monuments.Enabled = oldConfig.Monuments.Enabled;
-                        Config.Monuments.monuments = oldConfig.Monuments.monuments;
-                        Logging.Config("Monument settings migrated");
-                    }
+                // Keys in either language are accepted, missing keys keep their defaults
+                Config = JsonConvert.DeserializeObject<ConfigData>(raw, SerializerSettings(language));
 
-                    SaveConfig();
-                    Logging.Config("Settings migration completed successfully");
-                } else {
-                    Config = oldConfig;
-                    Logging.Config("Configuration loaded successfully");
+                if (Config.Version != CurrentVersion) {
+                    string backupPath = Location + $".{Config.Version}.backup";
+                    File.WriteAllText(backupPath, raw);
+                    Logging.Config($"Config version {Config.Version} -> {CurrentVersion}, backup saved to {backupPath}");
+                    Config.Version = CurrentVersion;
                 }
 
-                if (Config.Monuments.monuments.IsNullOrEmpty()) 
-                    tempData.shouldGetMonuments = true;
+                // Rewrites the file with new options and keys in the selected language
+                SaveConfig();
+                Logging.Config("Configuration loaded successfully");
             } catch (Exception ex) {
                 Logging.Error("Failed to load configuration", ex);
-                Logging.Config("Loading default configuration...");
+                string brokenPath = Location + $".broken-{DateTime.Now:yyyyMMdd-HHmmss}";
+                File.Copy(Location, brokenPath, true);
+                Logging.Config($"Broken config saved to {brokenPath}, loading default configuration...");
                 LoadDefaultConfig();
             }
+
+            Validate();
+
+            if (Config.Monuments.monuments.IsNullOrEmpty())
+                tempData.shouldGetMonuments = true;
         }
 
         private static void LoadDefaultConfig() {
@@ -272,13 +241,114 @@ namespace CustomGenerator
         public static void SaveConfig() {
             try
             {
-                File.WriteAllText(Location, JsonConvert.SerializeObject(Config, Formatting.Indented));
+                File.WriteAllText(Location, JsonConvert.SerializeObject(Config, SerializerSettings(Config.Language)));
                 Logging.Config("Configuration saved successfully");
             }
             catch (Exception ex)
             {
                 Logging.Error("Failed to save configuration", ex);
             }
+        }
+
+        // Fixes values the generator can't use. Changes are runtime-only, the file keeps what the user wrote.
+        private static void Validate() {
+            var gen = Config.Generator;
+
+            if (Config.Language != "en" && Config.Language != "ru") {
+                Logging.Warning($"Unknown language '{Config.Language}', expected 'en' or 'ru'");
+            }
+
+            try { string.Format(Config.mapSettings.MapName, 0, 0); }
+            catch (FormatException) {
+                Logging.Warning($"Map name '{Config.mapSettings.MapName}' has invalid placeholders (only {{0}} and {{1}} allowed), using default");
+                Config.mapSettings.MapName = new MapSettings().MapName;
+            }
+
+            if (gen.RiverWidthScale <= 0f) {
+                Logging.Warning($"River width scale must be > 0 (got {gen.RiverWidthScale}), using 1");
+                gen.RiverWidthScale = 1f;
+            }
+
+            if (gen.ModifyPercentages) {
+                float tiers = gen.Tier.Tier0 + gen.Tier.Tier1 + gen.Tier.Tier2;
+                float biomes = gen.Biom.Arid + gen.Biom.Temperate + gen.Biom.Tundra + gen.Biom.Arctic;
+                bool negative = new[] { gen.Tier.Tier0, gen.Tier.Tier1, gen.Tier.Tier2, gen.Biom.Arid, gen.Biom.Temperate, gen.Biom.Tundra, gen.Biom.Arctic, gen.Biom.Jungle }.Any(x => x < 0f);
+
+                if (negative || tiers <= 0f || biomes <= 0f) {
+                    Logging.Warning("Tier/biome percentages contain negative values or sum to 0, keeping vanilla percentages");
+                    gen.ModifyPercentages = false;
+                } else {
+                    if (Mathf.Abs(tiers - 100f) > 0.01f)
+                        Logging.Warning($"Tier percentages sum to {tiers}, not 100 - they will be scaled proportionally");
+                    if (Mathf.Abs(biomes - 100f) > 0.01f)
+                        Logging.Warning($"Biome percentages (without Jungle) sum to {biomes}, not 100 - they will be scaled proportionally");
+                    if (gen.Biom.Jungle > 100f) {
+                        Logging.Warning($"Jungle percentage {gen.Biom.Jungle} is over 100, using 100");
+                        gen.Biom.Jungle = 100f;
+                    }
+                }
+            }
+
+            foreach (var monument in Config.Monuments.monuments) {
+                string name = string.IsNullOrEmpty(monument.Description) ? monument.Folder : monument.Description;
+
+                if (monument.TargetCount < 0 || monument.MinWorldSize < 0 || monument.MinDistanceSameType < 0 || monument.MinDistanceDifferentType < 0) {
+                    Logging.Warning($"Monument '{name}': negative count/size/distance replaced with 0");
+                    monument.TargetCount = Math.Max(0, monument.TargetCount);
+                    monument.MinWorldSize = Math.Max(0, monument.MinWorldSize);
+                    monument.MinDistanceSameType = Math.Max(0, monument.MinDistanceSameType);
+                    monument.MinDistanceDifferentType = Math.Max(0, monument.MinDistanceDifferentType);
+                }
+
+                var filter = monument.Filter ??= new SpawnFilterCfg();
+                filter.SplatType = ValidEnumNames<TerrainSplat.Enum>(filter.SplatType, name, "SplatType");
+                filter.BiomeType = ValidEnumNames<TerrainBiome.Enum>(filter.BiomeType, name, "BiomeType");
+                filter.TopologyAny = ValidEnumNames<TerrainTopology.Enum>(filter.TopologyAny, name, "TopologyAny");
+                filter.TopologyAll = ValidEnumNames<TerrainTopology.Enum>(filter.TopologyAll, name, "TopologyAll");
+                filter.TopologyNot = ValidEnumNames<TerrainTopology.Enum>(filter.TopologyNot, name, "TopologyNot");
+            }
+        }
+
+        private static List<string> ValidEnumNames<T>(List<string> values, string monument, string field) where T : struct, Enum {
+            if (values == null) return new List<string>();
+            var valid = new List<string>();
+            foreach (var value in values) {
+                if (Enum.TryParse(value?.Trim(), out T _)) valid.Add(value.Trim());
+                else Logging.Warning($"Monument '{monument}': unknown {field} value '{value}' ignored (valid: {string.Join(", ", Enum.GetNames(typeof(T)))})");
+            }
+            return valid;
+        }
+    }
+
+    // Localized JSON key: written in the config's language, read in either
+    [AttributeUsage(AttributeTargets.Field | AttributeTargets.Property)]
+    public sealed class LocAttribute : Attribute {
+        public readonly string En, Ru;
+        public LocAttribute(string en, string ru) { En = en; Ru = ru; }
+    }
+
+    internal sealed class LocalizedContractResolver : Newtonsoft.Json.Serialization.DefaultContractResolver {
+        private readonly bool _ru;
+        public LocalizedContractResolver(string language) { _ru = language == "ru"; }
+
+        protected override IList<Newtonsoft.Json.Serialization.JsonProperty> CreateProperties(Type type, MemberSerialization memberSerialization) {
+            var properties = base.CreateProperties(type, memberSerialization);
+            var aliases = new List<Newtonsoft.Json.Serialization.JsonProperty>();
+
+            foreach (var property in properties) {
+                var loc = property.AttributeProvider?.GetAttributes(typeof(LocAttribute), true).OfType<LocAttribute>().FirstOrDefault();
+                if (loc == null) continue;
+
+                property.PropertyName = _ru ? loc.Ru : loc.En;
+
+                var alias = CreateProperty(type.GetMember(property.UnderlyingName, System.Reflection.BindingFlags.Instance | System.Reflection.BindingFlags.Public | System.Reflection.BindingFlags.NonPublic)[0], memberSerialization);
+                alias.PropertyName = _ru ? loc.En : loc.Ru;
+                alias.ShouldSerialize = _ => false;
+                aliases.Add(alias);
+            }
+
+            foreach (var alias in aliases) properties.Add(alias);
+            return properties;
         }
     }
 }
