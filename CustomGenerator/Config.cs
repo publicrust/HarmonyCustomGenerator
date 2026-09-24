@@ -115,6 +115,19 @@ namespace CustomGenerator
             public int MinDistanceDifferentType = 0;
 
             public SpawnFilterCfg Filter = new SpawnFilterCfg();
+
+            // Empty = vanilla folder. Path inside the game bundles (not on disk), comma separated, relative to assets/bundled/prefabs/autospawn/
+            public string OverrideFolder = "";
+            // Parts of prefab file names (without folder), e.g. "harbor_1". Include empty = all prefabs of the group
+            public List<string> IncludePrefabs = new List<string>();
+            public List<string> ExcludePrefabs = new List<string>();
+            // Part of prefab name -> how many copies go to the candidate pool (0 = none)
+            public Dictionary<string, int> PrefabCopies = new Dictionary<string, int>();
+            // Vanilla scales TargetCount by world size (curve defined only up to 6000)
+            public bool IgnoreWorldSizeMultiplier = false;
+
+            [JsonIgnore]
+            public bool HasPrefabRules => IncludePrefabs.Count > 0 || ExcludePrefabs.Count > 0 || PrefabCopies.Count > 0;
         }
         //private struct DistanceInfo {
         //    public float minDistanceSameType;
@@ -299,6 +312,17 @@ namespace CustomGenerator
                     monument.MinDistanceSameType = Math.Max(0, monument.MinDistanceSameType);
                     monument.MinDistanceDifferentType = Math.Max(0, monument.MinDistanceDifferentType);
                 }
+
+                monument.OverrideFolder = (monument.OverrideFolder ?? "").Trim();
+                monument.IncludePrefabs = (monument.IncludePrefabs ?? new List<string>()).Where(x => !string.IsNullOrWhiteSpace(x)).Select(x => x.Trim().ToLowerInvariant()).ToList();
+                monument.ExcludePrefabs = (monument.ExcludePrefabs ?? new List<string>()).Where(x => !string.IsNullOrWhiteSpace(x)).Select(x => x.Trim().ToLowerInvariant()).ToList();
+                var copies = new Dictionary<string, int>();
+                foreach (var pair in monument.PrefabCopies ?? new Dictionary<string, int>()) {
+                    if (string.IsNullOrWhiteSpace(pair.Key)) continue;
+                    if (pair.Value < 0) Logging.Warning($"Monument '{name}': negative copies for '{pair.Key}' replaced with 0");
+                    copies[pair.Key.Trim().ToLowerInvariant()] = Math.Max(0, pair.Value);
+                }
+                monument.PrefabCopies = copies;
 
                 var filter = monument.Filter ??= new SpawnFilterCfg();
                 filter.SplatType = ValidEnumNames<TerrainSplat.Enum>(filter.SplatType, name, "SplatType");

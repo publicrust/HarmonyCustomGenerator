@@ -3,7 +3,9 @@ using HarmonyLib;
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.IO;
 using System.Reflection;
+using UnityEngine;
 
 using static CustomGenerator.ExtConfig;
 namespace CustomGenerator.Generators
@@ -81,10 +83,50 @@ namespace CustomGenerator.Generators
                     TopologyNot = monument.Filter.TopologyNot.Count == 0 ? (TerrainTopology.Enum)(0) :  (TerrainTopology.Enum)EnumParser.GetFilterEnum("TopologyNot", monument.Filter.TopologyNot),
                 };
             }
-            //Debug.Log(__instance.TargetCountWorldSizeMultiplier.Evaluate(World.Size));
-            //Debug.Log(__instance.TargetCount * __instance.TargetCountWorldSizeMultiplier.Evaluate(World.Size));
+            if (!string.IsNullOrEmpty(monument.OverrideFolder)) {
+                Logging.Generation($"{monument.Description}: folder '{__instance.ResourceFolder}' -> '{monument.OverrideFolder}'");
+                __instance.ResourceFolder = monument.OverrideFolder;
+            }
+            if (monument.IgnoreWorldSizeMultiplier)
+                __instance.TargetCountWorldSizeMultiplier = AnimationCurve.Constant(0f, 100000f, 1f);
+            if (monument.HasPrefabRules)
+                Prefab_FindPrefabNames.Active = monument;
+
             Logging.Generation($"Changed instance values for {monument.Description}");
             return true;
+        }
+
+        private static void Finalizer() {
+            Prefab_FindPrefabNames.Active = null;
+        }
+    }
+
+    // PlaceMonuments loads its candidates through Prefab.FindPrefabNames, where a name is repeated
+    // PrefabParameters.Count times. While a group with prefab rules runs, filter that list.
+    [HarmonyPatch]
+    class Prefab_FindPrefabNames {
+        internal static ExtConfig.Monument Active;
+
+        private static MethodBase TargetMethod() { return AccessTools.Method(typeof(Prefab), "FindPrefabNames"); }
+        private static void Postfix(string strPrefab, ref string[] __result) {
+            var monument = Active;
+            if (monument == null || __result == null) return;
+
+            var result = new List<string>();
+            foreach (var group in __result.GroupBy(x => x)) {
+                // Match rules against the prefab name only, the path contains the folder (e.g. monument/harbor/)
+                string name = Path.GetFileNameWithoutExtension(group.Key);
+                if (monument.IncludePrefabs.Count > 0 && !monument.IncludePrefabs.Any(name.Contains)) continue;
+                if (monument.ExcludePrefabs.Any(name.Contains)) continue;
+
+                var copies = monument.PrefabCopies.FirstOrDefault(x => name.Contains(x.Key));
+                int count = copies.Key != null ? copies.Value : group.Count();
+                for (int i = 0; i < count; i++) result.Add(group.Key);
+            }
+
+            string available = string.Join(", ", __result.Distinct().Select(Path.GetFileNameWithoutExtension));
+            Logging.Generation($"{monument.Description}: '{strPrefab}' {__result.Length} -> {result.Count} candidates (available: {available})");
+            __result = result.ToArray();
         }
     }
 
