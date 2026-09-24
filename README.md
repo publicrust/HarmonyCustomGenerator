@@ -5,14 +5,16 @@
 
 Allows you to generate semi-custom maps on default Rust generator.
 
-For installation and usage instructions, see [USAGE.md](USAGE.md).
+For installation, full config reference and monument swap instructions, see [USAGE.md](USAGE.md).
+
+> ⚠️ The mod is for **map generation only**: once the map is saved it shuts the server down. Don't keep it on a live server.
 
 For help, report issue and etc. join [our discord](https://discord.gg/xUdpkm8RUS).
  
 ### Features
 
 1. QoL (Quality of Life)
-- [x] Skip Asset Warmup on start
+- [x] Disable AI navmesh generation on start (faster startup)
 
 2. Map Settings
 - [x] Generate map over default limits
@@ -29,7 +31,7 @@ For help, report issue and etc. join [our discord](https://discord.gg/xUdpkm8RUS
 - [x] Enable/Disable roadside objects
 - [x] Try to generate Rail Ring on any map
 - [x] Enable/Disable railside monuments
-- [x] Enable/Disable railside objects
+- [ ] Enable/Disable railside objects (option exists in the config but has no effect yet)
 - [x] Remove car wrecks near roads
 - [x] Remove rivers
 - [x] Remove tunnel entrances
@@ -37,7 +39,7 @@ For help, report issue and etc. join [our discord](https://discord.gg/xUdpkm8RUS
 - [x] Remove large powerlines
 - [x] Scale river width
 - [x] Configure tier percentages (Tier0, Tier1, Tier2)
-- [x] Configure biome percentages (Arid, Temperate, Tundra, Arctic)
+- [x] Configure biome percentages (Arid, Temperate, Tundra, Arctic + Jungle separately)
 - [x] Generate unique environment (oasis, canyons, lakes)
 
 4. Monuments
@@ -45,6 +47,8 @@ For help, report issue and etc. join [our discord](https://discord.gg/xUdpkm8RUS
 - [x] Configure distances between monuments
 - [x] Configure specific monument counts
 - [x] Monument placement filters (biome, splat, topology)
+- [x] Choose prefabs inside a monument group (include / exclude / number of copies)
+- [x] Override a group's prefab path, ignore the vanilla world-size count multiplier
 
 5. Map Image Generator
 - [x] Generate splat/height map
@@ -57,12 +61,11 @@ For help, report issue and etc. join [our discord](https://discord.gg/xUdpkm8RUS
   - Swap specific monument types (e.g., replace Outpost with custom version)
   - Keep original monument positions and connections
 - [x] Save both map versions (with and without swaps)
-- [x] Russian and English language support in configuration
+- [x] Config in English or Russian, switchable in the config itself
+- [x] Config validation with warnings in the log, automatic backup on update
 
-### Monument Swapping Setup  
-Instructions for use can be found in the `USAGE.md` file
-
-Configure all features at `HarmonyConfig/CustomGeneratorCFG.json`
+### Configuration
+All features are configured in `HarmonyConfig/CustomGenerator.json` (created on the first run). Every option is described in [USAGE.md](USAGE.md), and monument swapping has its own section: [Monument swap](USAGE.md#monument-swap).
 
 ------
 ### Authors and Credits
