@@ -58,6 +58,14 @@ namespace CustomGenerator.Patches {
                 World.Config.Rivers = false;
                 Logging.Generation("Rivers disabled");
             }
+            if (Config.Generator.RemovePowerlines) {
+                World.Config.Powerlines = false;
+                Logging.Generation("Powerlines disabled");
+            }
+            if (Config.Generator.RemoveTunnels) {
+                World.Config.BelowGroundRails = false;
+                Logging.Generation("Underground tunnels disabled");
+            }
             LoadPercentages();
             Logging.Generation($"Changing tier percentages...");
         }

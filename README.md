@@ -33,6 +33,9 @@ For help, report issue and etc. join [our discord](https://discord.gg/xUdpkm8RUS
 - [x] Remove car wrecks near roads
 - [x] Remove rivers
 - [x] Remove tunnel entrances
+- [x] Remove underground tunnels
+- [x] Remove large powerlines
+- [x] Scale river width
 - [x] Configure tier percentages (Tier0, Tier1, Tier2)
 - [x] Configure biome percentages (Arid, Temperate, Tundra, Arctic)
 - [x] Generate unique environment (oasis, canyons, lakes)

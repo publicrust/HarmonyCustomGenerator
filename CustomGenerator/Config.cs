@@ -12,7 +12,7 @@ namespace CustomGenerator
         public const bool EN = true;
         public static ConfigData Config;
         public static TempData tempData;
-        private static readonly string CurrentVersion = "0.2.3";
+        private static readonly string CurrentVersion = "0.2.4";
 
         private static readonly string Location = Path.Combine("HarmonyConfig", "CustomGenerator.json");
 
@@ -53,20 +53,20 @@ namespace CustomGenerator
 
             [JsonProperty(EN ? "Remove Rivers" : "Удалить реки")]
             public bool RemoveRivers = false;
-           // [JsonProperty(EN ? "Reduce River Width" : "Уменишить ширину рек")]
-            // public bool ReduceRiversWidth = false;
+            [JsonProperty(EN ? "River width scale (1 = default)" : "Множитель ширины рек (1 = по умолчанию)")]
+            public float RiverWidthScale = 1f;
 
             [JsonProperty(EN ? "Remove Car Wrecks around Road" : "Удалить разбитые префабы машин около дороги")]
             public bool RemoveCarWrecks = false;
             [JsonProperty(EN ? "Allow building on road" : "Разрешить строительство на дорогах")]
             public bool AllowRoadBuild = false;
-            //[JsonProperty("Remove large powerlines")]
-            //public bool RemovePowerlines = false;
+            [JsonProperty(EN ? "Remove large powerlines" : "Удалить большие ЛЭП")]
+            public bool RemovePowerlines = false;
             [JsonProperty(EN ? "Remove tunnel entrances" : "Удалить входы в туннели")]
             public bool RemoveTunnelsEntrances = false;
 
-            //[JsonProperty("Remove underground tunnels")]
-            //public bool RemoveTunnels = false;
+            [JsonProperty(EN ? "Remove underground tunnels (also removes entrances)" : "Удалить подземные туннели (вместе со входами)")]
+            public bool RemoveTunnels = false;
 
             [JsonProperty(EN ? "Change percentages" : "Изменить проценты")]
             public bool ModifyPercentages = false;
@@ -217,6 +217,10 @@ namespace CustomGenerator
                         Config.Generator.UniqueEnviroment = oldConfig.Generator.UniqueEnviroment;
                         Config.Generator.RemoveCarWrecks = oldConfig.Generator.RemoveCarWrecks;
                         Config.Generator.RemoveRivers = oldConfig.Generator.RemoveRivers;
+                        Config.Generator.RiverWidthScale = oldConfig.Generator.RiverWidthScale;
+                        Config.Generator.AllowRoadBuild = oldConfig.Generator.AllowRoadBuild;
+                        Config.Generator.RemovePowerlines = oldConfig.Generator.RemovePowerlines;
+                        Config.Generator.RemoveTunnels = oldConfig.Generator.RemoveTunnels;
                         Config.Generator.RemoveTunnelsEntrances = oldConfig.Generator.RemoveTunnelsEntrances;
                         Config.Generator.ModifyPercentages = oldConfig.Generator.ModifyPercentages;
                         Config.Generator.Tier = oldConfig.Generator.Tier;

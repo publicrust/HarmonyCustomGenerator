@@ -20,7 +20,7 @@ namespace CustomGenerator.Generators
 
         private static MethodBase TargetMethod() { return AccessTools.Method(typeof(PlaceMonuments), nameof(PlaceMonuments.Process)); }
         private static bool Prefix(PlaceMonuments __instance) {
-            if (Config.Generator.RemoveTunnelsEntrances && __instance.ResourceFolder == "tunnel-entrance") {
+            if ((Config.Generator.RemoveTunnelsEntrances || Config.Generator.RemoveTunnels) && __instance.ResourceFolder == "tunnel-entrance") {
                 Logging.Generation("Tunnel Entrances off");
                 MinWorldSize(__instance) = 999999;
                 //return false;

@@ -1,31 +1,32 @@
 ﻿using System.Collections.Generic;
-using System;
 using System.Reflection;
-using System.Reflection.Emit;
 using CustomGenerator.Utility;
 using HarmonyLib;
+using UnityEngine;
 using static CustomGenerator.ExtConfig;
-using System.Linq;
 
 
 namespace CustomGenerator.Patches
 {
     [HarmonyPatch]
-    internal static class GenerateRiverLayout_Patch {  // todo: fix this shit
+    internal static class GenerateRiverLayout_Patch {
         private static MethodBase TargetMethod() { return AccessTools.Method(typeof(GenerateRiverLayout), "Process"); }
+        private static AccessTools.FieldRef<TerrainPath, List<PathList>> _rivers = AccessTools.FieldRefAccess<TerrainPath, List<PathList>>("Rivers");
 
-        [HarmonyTranspiler]
-        private static IEnumerable<CodeInstruction> Transpiler(IEnumerable<CodeInstruction> instructions)
-        {
-            List<CodeInstruction> list = instructions.ToList();
-            //if (!Config.Generator.ReduceRiversWidth) return list;
-            //for (int i = 0; i < list.Count; i++) {
-            //    if (list[i].opcode == OpCodes.Ldc_R4 && list[i].operand is float w && Math.Abs(w - 8f) < 0.001f) {
-            //        list[i].operand = 5.5f;
-            //    }
-            //}
+        private static void Prefix(out int __state) {
+            __state = _rivers(TerrainMeta.Path).Count;
+        }
 
-            return list;
+        private static void Postfix(int __state) {
+            float scale = Config.Generator.RiverWidthScale;
+            if (World.Networked || Mathf.Approximately(scale, 1f)) return;
+            if (scale <= 0f) { Logging.Error($"River width scale must be > 0 (got {scale}), skipping."); return; }
+
+            var rivers = _rivers(TerrainMeta.Path);
+            for (int i = __state; i < rivers.Count; i++)
+                rivers[i].Width *= scale;
+
+            Logging.Generation($"River width scaled x{scale} for {rivers.Count - __state} rivers");
         }
     }
 }
