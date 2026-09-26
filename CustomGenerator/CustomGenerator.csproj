@@ -46,6 +46,7 @@
     <Compile Include="Patches\World.cs" />
     <Compile Include="Patches\WorldSetup.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
+    <Compile Include="Utility\ConfigEditor.cs" />
     <Compile Include="Utility\ConfigSchema.cs" />
     <Compile Include="Utility\EnumParser.cs" />
     <Compile Include="Utility\GenerationReport.cs" />
@@ -54,6 +55,9 @@
   </ItemGroup>
   <ItemGroup>
     <None Include="Properties\.editorconfig" />
+    <EmbeddedResource Include="Editor\ConfigEditor.html">
+      <LogicalName>ConfigEditor.html</LogicalName>
+    </EmbeddedResource>
   </ItemGroup>
   <ItemGroup>
     <Reference Include="0Harmony">

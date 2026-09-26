@@ -18,12 +18,14 @@ namespace CustomGenerator
 
         private static readonly string Location = Path.Combine("HarmonyConfig", "CustomGenerator.json");
         private static readonly string SchemaLocation = Path.Combine("HarmonyConfig", "CustomGenerator.schema.json");
+        private static readonly string EditorLocation = Path.Combine("HarmonyConfig", "CustomGenerator.editor.html");
 
         static ExtConfig() => LoadConfig();
 
         public class ConfigData {
             // Lets editors (VS Code etc.) pick up the schema written next to the config
             [JsonProperty("$schema", Order = -3)]
+            [Schema(ReadOnly = true)]
             public string SchemaPath = "./" + Path.GetFileName(SchemaLocation);
 
             [JsonProperty("Language (en/ru)", Order = -2)]
@@ -52,6 +54,7 @@ namespace CustomGenerator
 
             [JsonProperty(Order = -1)]
             [Desc("Mod version the config was written by. Don't edit", "Версия мода, которой записан конфиг. Не изменяйте")]
+            [Schema(ReadOnly = true)]
             public string Version = CurrentVersion;
         }
         public sealed class MapSettings {
@@ -113,8 +116,10 @@ namespace CustomGenerator
             [Loc("Change percentages", "Изменить проценты")]
             public bool ModifyPercentages = false;
             [Loc("Tier Percentages (100 in total)", "Проценты Тиров (всего 100)")]
+            [Schema(SumTo = 100)]
             public TierSettings Tier = new ();
             [Loc("Biome Percentages (Arid+Temperate+Tundra+Arctic = 100, Jungle is separate)", "Проценты Биомов (Пустыня+Умеренный+Тундра+Арктика = 100, Джунгли отдельно)")]
+            [Schema(SumTo = 100, SumFields = "Arid,Temperate,Tundra,Arctic")]
             public BiomSettings Biom = new ();
         }
 
@@ -124,6 +129,7 @@ namespace CustomGenerator
             [Loc("Folder with .map files (relative to server root)", "Папка с .map файлами (относительно папки сервера)")]
             public string Folder = "maps/custom";
             [Loc("List", "Список")]
+            [Schema(ItemTitle = "Name,File", Addable = true)]
             public List<CustomMonument> List = new();
         }
 
@@ -134,6 +140,7 @@ namespace CustomGenerator
             public string Name = "";
             [Desc("File in the custom monuments folder, e.g. \"my_gas_station.map\" or \"my_gas_station.prefab\"",
                   "Файл в папке кастомных монументов, например \"my_gas_station.map\" или \"my_gas_station.prefab\"")]
+            [Schema(Suggest = "customFiles")]
             public string File = "";
             [Desc("How many copies to place (fewer if there is no room)", "Сколько копий разместить (меньше, если не хватит места)")]
             [Schema(Min = 0)]
@@ -188,6 +195,7 @@ namespace CustomGenerator
             [Loc("Enabled", "Включить")]
             public bool Enabled = false;
             [Loc("MonumentList", "Лист монументов")]
+            [Schema(ItemTitle = "Description,Folder")]
             public List<Monument> monuments = new ();
         }
 
@@ -200,6 +208,7 @@ namespace CustomGenerator
             public string Description;
             [Desc("Group path in the bundles, the group is found by it. Don't change, use OverrideFolder",
                   "Путь группы в бандлах, по нему ищется группа. Не изменяйте, используйте OverrideFolder")]
+            [Schema(ReadOnly = true)]
             public string Folder;
 
             [Desc("Min map size for the group to appear, 0 = any", "Мин. размер карты, на котором появляется группа, 0 = любой")]
@@ -233,12 +242,14 @@ namespace CustomGenerator
             public string OverrideFolder = "";
             [Desc("Keep only prefabs whose name (without folder) contains one of these strings, e.g. \"harbor_1\". Empty = all",
                   "Оставить только префабы, в имени которых (без папки) есть одна из строк, например \"harbor_1\". Пусто = все")]
+            [Schema(Suggest = "prefabs")]
             public List<string> IncludePrefabs = new List<string>();
             [Desc("Remove prefabs whose name contains one of these strings", "Убрать префабы, в имени которых есть одна из строк")]
+            [Schema(Suggest = "prefabs")]
             public List<string> ExcludePrefabs = new List<string>();
             [Desc("\"part of name\": N - how many copies of the prefab go to the candidate pool, 0 = none",
                   "\"часть имени\": N - сколько копий префаба попадёт в пул кандидатов, 0 = ни одной")]
-            [Schema(Min = 0)]
+            [Schema(Min = 0, Suggest = "prefabs")]
             public Dictionary<string, int> PrefabCopies = new Dictionary<string, int>();
             [Desc("true = place exactly TargetCount (vanilla scales it by map size, curve defined only up to 6000)",
                   "true = ставить ровно TargetCount (игра умножает его на коэффициент размера карты, заданный только до 6000)")]
@@ -390,16 +401,18 @@ namespace CustomGenerator
         public static void SaveConfig() => SaveConfig(Config);
 
         private static void SaveConfig(ConfigData data) {
+            string json = null;
             try
             {
-                File.WriteAllText(Location, JsonConvert.SerializeObject(data, SerializerSettings(data.Language)));
+                json = JsonConvert.SerializeObject(data, SerializerSettings(data.Language));
+                File.WriteAllText(Location, json);
                 Logging.Config("Configuration saved successfully");
             }
             catch (Exception ex)
             {
                 Logging.Error("Failed to save configuration", ex);
             }
-            SaveSchema(data);
+            SaveSchema(data, json);
         }
 
         // Adds the monument groups of this Rust version that the config doesn't have yet: all of them on the first run,
@@ -435,13 +448,14 @@ namespace CustomGenerator
             return added;
         }
 
-        // Regenerated on every save, so it always matches the mod version and the config's language
-        private static void SaveSchema(ConfigData data) {
+        // Regenerated on every save, so they always match the mod version and the config's language
+        private static void SaveSchema(ConfigData data, string json) {
             try {
                 var schema = ConfigSchema.Build(typeof(ConfigData), new LocalizedContractResolver(data.Language), data.Language == "ru");
                 File.WriteAllText(SchemaLocation, schema.ToString(Formatting.Indented));
+                if (json != null) ConfigEditor.Write(EditorLocation, schema, json, data.CustomMonuments?.Folder);
             } catch (Exception ex) {
-                Logging.Error("Failed to save config schema", ex);
+                Logging.Error("Failed to save config schema or editor", ex);
             }
         }
 

@@ -28,7 +28,9 @@ jobs:
           if (-not (Test-Path rust/RustDedicated_Data/Managed/Assembly-CSharp.dll)) { throw "Rust server DLLs were not downloaded" }
 
       - name: Build
-        run: msbuild CustomGenerator/CustomGenerator.csproj -p:Configuration=Release -p:RustServerDir=${{ github.workspace }}\rust\ -v:m
+        run: |
+          msbuild CustomGenerator/CustomGenerator.csproj -p:Configuration=Release -p:RustServerDir=${{ github.workspace }}\rust\ -v:m
+          msbuild CustomGenerator.Launcher/CustomGenerator.Launcher.csproj -p:Configuration=Release -v:m
 
       # Same layout as the server folder: unpack the zip into the server root
       - name: Package
@@ -36,6 +38,7 @@ jobs:
           $name = if ($env:GITHUB_REF_TYPE -eq 'tag') { "CustomGenerator-$env:GITHUB_REF_NAME" } else { "CustomGenerator-$($env:GITHUB_SHA.Substring(0, 7))" }
           New-Item -ItemType Directory package/HarmonyMods, package/mapimages/resources | Out-Null
           Copy-Item CustomGenerator/bin/Release/CustomGenerator.dll package/HarmonyMods/
+          Copy-Item CustomGenerator.Launcher/bin/Release/CustomGeneratorLauncher.exe package/
           Copy-Item Resources/* package/mapimages/resources/
           Copy-Item README.md, README_RU.md, USAGE.md, USAGE_RU.md, SWAP_MONUMENTS.md, LICENSE package/
           Compress-Archive package/* "$name.zip"

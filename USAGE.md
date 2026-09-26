@@ -31,7 +31,7 @@ The mod hooks into the vanilla Rust map generator through Harmony and changes it
 ## Installation
 
 1. You need a Rust Dedicated Server. Harmony 2.3 is already included.
-2. Download `CustomGenerator-<version>.zip` from [Releases](https://github.com/publicrust/HarmonyCustomGenerator/releases) and unpack it into the server folder, next to `RustDedicated.exe`. It contains `HarmonyMods/CustomGenerator.dll` and the preview fonts in `mapimages/resources/`.
+2. Download `CustomGenerator-<version>.zip` from [Releases](https://github.com/publicrust/HarmonyCustomGenerator/releases) and unpack it into the server folder, next to `RustDedicated.exe`. It contains `HarmonyMods/CustomGenerator.dll`, the [launcher](#config-editor) `CustomGeneratorLauncher.exe` and the preview fonts in `mapimages/resources/`.
 3. That's it. The config is created on the first run.
 
 Where things are (all paths are relative to the server folder that contains `RustDedicated.exe`):
@@ -39,8 +39,11 @@ Where things are (all paths are relative to the server folder that contains `Rus
 | Path | Contents |
 |---|---|
 | `HarmonyMods/CustomGenerator.dll` | The mod |
+| `CustomGeneratorLauncher.exe` | [Config editor](#config-editor) with map generation from the browser |
 | `HarmonyConfig/CustomGenerator.json` | Config |
 | `HarmonyConfig/CustomGenerator.schema.json` | Config schema for editor hints (regenerated, don't edit) |
+| `HarmonyConfig/CustomGenerator.editor.html` | [Config editor](#config-editor): open it in a browser (regenerated, don't edit) |
+| `HarmonyConfig/CustomGenerator.lastrun.json`, `CustomGenerator.prefabs.json` | Last run and the prefab names of each group, for the editor (regenerated) |
 | `HarmonyConfig/logs/cgen_*.log` | Mod logs, one file per run |
 | `maps/` | Generated maps (`.map`) and generation reports (`.report.txt`) |
 | `maps/prefabs/` | Your monuments for swapping |
@@ -115,6 +118,25 @@ The first field of the config:
 A new config uses your system language. Keys are accepted in **both** languages: change the value to `en` or `ru`, restart the server, and the file is rewritten with keys in the selected language. All values are kept.
 
 This guide uses English keys, with the Russian key in parentheses where it helps.
+
+### Config editor
+The easiest way to change settings and generate maps. There are two ways to open it:
+
+- **With the launcher (recommended):** double-click `CustomGeneratorLauncher.exe` in the server folder (it's in the release archive). It opens the editor in your browser at `http://127.0.0.1:28190/` and can **generate maps** right from the page. Keep its window open while you work.
+- **As a file:** on every run the mod writes `HarmonyConfig/CustomGenerator.editor.html`. Double-click it to edit the config offline, without generation.
+
+What's inside:
+- **Generate** (launcher only): pick sizes and seeds (🎲 for a random one, several maps in a queue), press **Save & generate** and watch the live log and the current generation step. **Stop** kills the run and clears the queue. Each map is a separate server run with its own ports (28915+), so a live server on the same machine doesn't clash. Opened as a file, this tab shows the commands to run by hand.
+- **Last run**: the map preview, size, seed, time, warnings, how many monuments of each group were placed, custom monuments, swap results and the full report.
+- **Settings sections** with descriptions and allowed values: toggles, biomes and topologies as chips, search in the monument list. A dot marks values changed from the default, `↺` puts the default back. Invalid values are marked red and can't be saved.
+- **Real names instead of typing blind:** a monument group shows the prefab names the game actually has for it (after the group has been generated once) as chips for `IncludePrefabs` / `ExcludePrefabs`, and `PrefabCopies` as `− N +` steppers. `File` of a custom monument suggests the files of the folder, and the folder's files that aren't in the list yet can be added in one click. The swap section lists `maps/prefabs` and tells whether each file matches a game prefab.
+- **Tier and biome bars:** drag the dividers, the sum stays 100.
+- **✦ Presets:** ready-made recipes (no rivers with rings, more snow, 5 harbors, no lighthouses, clean roads…). Each shows exactly what it changes before you apply it.
+- **Save** (Ctrl+S): through the launcher straight to `HarmonyConfig/CustomGenerator.json` (the previous one is kept as `.bak`). As a file, in Chrome and Edge to the file you pick, in other browsers as a download.
+
+Don't save while the server is running: the mod rewrites the config when it starts. The launcher blocks saving while it's generating. The file version shows the values from the last server run; if you edited the config by hand since then, press **Open…** and pick it.
+
+The launcher listens only on `127.0.0.1` and accepts requests only from its own page. Options: `--port <n>` (default 28190), `--root <server folder>` if it isn't next to `RustDedicated.exe`, `--no-browser`.
 
 ### Editor hints
 Next to the config the mod writes `CustomGenerator.schema.json`, and the config's first line links to it (`"$schema"`). Open the config in **VS Code** (or another editor with JSON Schema support) and you get:

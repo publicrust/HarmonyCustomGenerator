@@ -109,6 +109,9 @@ namespace CustomGenerator.Generators
 
         private static MethodBase TargetMethod() { return AccessTools.Method(typeof(Prefab), "FindPrefabNames"); }
         private static void Postfix(string strPrefab, ref string[] __result) {
+            // Every name the group could use, before our rules filter them, for the config editor
+            if (__result != null) GenerationReport.PrefabNames(__result.Select(Path.GetFileNameWithoutExtension));
+
             var monument = Active;
             if (monument == null || __result == null) return;
 

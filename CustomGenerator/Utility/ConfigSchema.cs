@@ -13,12 +13,19 @@ namespace CustomGenerator.Utility
         public DescAttribute(string en, string ru) { En = en; Ru = ru; }
     }
 
-    // Extra schema constraints. Enum/Values restrict a string (or the items of a string list) to these names
+    // Extra schema constraints. Enum/Values restrict a string (or the items of a string list) to these names.
+    // ReadOnly, ItemTitle, Addable and SumTo are hints for the config editor page.
     [AttributeUsage(AttributeTargets.Field | AttributeTargets.Property)]
     public sealed class SchemaAttribute : Attribute {
         public double Min = double.NaN, Max = double.NaN;
         public Type Enum;
         public string[] Values;
+        public bool ReadOnly;
+        public string ItemTitle;    // list of objects: comma separated fields to title an item with, first non-empty wins
+        public bool Addable;        // list of objects: the user may add and remove items
+        public double SumTo = double.NaN;
+        public string SumFields;    // with SumTo: comma separated fields that must add up, empty = all
+        public string Suggest;      // editor suggestions from the last run: "prefabs" (group prefab names), "customFiles"
     }
 
     // Builds a JSON Schema (draft-07) of the config, so editors show descriptions, autocomplete keys and values
@@ -61,6 +68,8 @@ namespace CustomGenerator.Utility
                 if (property.Ignored || property.ShouldSerialize?.Invoke(null) == false) continue;
 
                 var node = Describe(property.PropertyType, resolver, ru, stack);
+                // Language-independent name, the editor addresses fields by it (presets)
+                node["x-name"] = property.UnderlyingName;
                 var attributes = property.AttributeProvider?.GetAttributes(true) ?? new List<Attribute>();
 
                 var desc = attributes.OfType<DescAttribute>().FirstOrDefault();
@@ -87,7 +96,19 @@ namespace CustomGenerator.Utility
             if (names != null) target["enum"] = new JArray(names.Distinct());
             if (!double.IsNaN(extra.Min)) target["minimum"] = extra.Min;
             if (!double.IsNaN(extra.Max)) target["maximum"] = extra.Max;
+
+            if (extra.ReadOnly) node["readOnly"] = true;
+            if (!string.IsNullOrEmpty(extra.ItemTitle)) node["x-itemTitle"] = new JArray(Split(extra.ItemTitle));
+            if (extra.Addable) node["x-addable"] = true;
+            if (!string.IsNullOrEmpty(extra.Suggest)) node["x-suggest"] = extra.Suggest;
+            if (!double.IsNaN(extra.SumTo)) {
+                var sum = new JObject { ["target"] = extra.SumTo };
+                if (!string.IsNullOrEmpty(extra.SumFields)) sum["fields"] = new JArray(Split(extra.SumFields));
+                node["x-sum"] = sum;
+            }
         }
+
+        private static string[] Split(string list) => list.Split(',').Select(x => x.Trim()).Where(x => x.Length > 0).ToArray();
 
         private static bool IsSimple(Type type) => type.IsPrimitive || type.IsEnum || type == typeof(string) || type == typeof(decimal);
 

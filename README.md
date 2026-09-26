@@ -67,11 +67,13 @@ For help, report issue and etc. join [our discord](https://discord.gg/xUdpkm8RUS
   - Keep original monument positions and connections
 - [x] Save both map versions (with and without swaps)
 - [x] Generation report: placed monuments, custom monuments, swaps, warnings (in the log and next to the map)
+- [x] Config editor in the browser: `HarmonyConfig/CustomGenerator.editor.html`, no install needed
+- [x] Launcher (`CustomGeneratorLauncher.exe`): generate maps from the browser, live log, last run with preview and report, presets
 - [x] Config in English or Russian, switchable in the config itself
 - [x] Config validation with warnings in the log, automatic backup on update
 
 ### Configuration
-All features are configured in `HarmonyConfig/CustomGenerator.json` (created on the first run). Every option is described in [USAGE.md](USAGE.md), and monument swapping has its own section: [Monument swap](USAGE.md#monument-swap).
+All features are configured in `HarmonyConfig/CustomGenerator.json` (created on the first run). The easiest way is `CustomGeneratorLauncher.exe` from the release: it opens the config editor in your browser and generates maps from there. Every option is described in [USAGE.md](USAGE.md), and monument swapping has its own section: [Monument swap](USAGE.md#monument-swap).
 
 ------
 ### Authors and Credits
