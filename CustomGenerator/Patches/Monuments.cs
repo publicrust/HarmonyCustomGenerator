@@ -130,6 +130,40 @@ namespace CustomGenerator.Generators
         }
     }
 
+    // Counts the prefabs each monument step added, for the generation report. The postfix runs first,
+    // so custom monuments placed right after "Main Monuments" aren't counted into it.
+    [HarmonyPatch]
+    class PlaceMonuments_Report {
+        private static IEnumerable<MethodBase> TargetMethods() {
+            foreach (var name in new[] { "PlaceMonuments", "PlaceMonumentsRoadside", "PlaceMonumentsRailside" }) {
+                var type = AccessTools.TypeByName(name);
+                var method = type == null ? null : AccessTools.Method(type, "Process");
+                if (method != null) yield return method;
+            }
+        }
+
+        // Runs before the settings prefix, so ResourceFolder is still the vanilla one (the key of the group in the config)
+        [HarmonyPriority(Priority.First)]
+        private static void Prefix(ProceduralComponent __instance, out int __state) {
+            __state = World.Serialization?.world?.prefabs?.Count ?? 0;
+            GenerationReport.CurrentFolder = (__instance as PlaceMonuments)?.ResourceFolder;
+        }
+
+        [HarmonyPriority(Priority.First)]
+        private static void Postfix(ProceduralComponent __instance, int __state) {
+            string folder = GenerationReport.CurrentFolder;
+            GenerationReport.CurrentFolder = null;
+            var prefabs = World.Serialization?.world?.prefabs;
+            if (prefabs == null) return;
+            var added = prefabs.Skip(__state).Select(x => Path.GetFileNameWithoutExtension(StringPool.Get(x.id) ?? x.id.ToString()));
+
+            // Show the target only when it's exact: set in the config and not scaled by map size
+            var cfg = Config.Monuments.Enabled && folder != null ? Config.Monuments.monuments.FirstOrDefault(x => x.ShouldChange && x.Folder == folder) : null;
+            int target = cfg != null && cfg.TargetCount > 0 && cfg.IgnoreWorldSizeMultiplier ? (cfg.Generate ? cfg.TargetCount : 0) : -1;
+            GenerationReport.MonumentGroup(__instance.Description, folder, target, added);
+        }
+    }
+
     [HarmonyPatch]
     class PlaceDecorUniform_Process
     {

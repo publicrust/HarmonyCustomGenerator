@@ -41,7 +41,7 @@
 | `HarmonyConfig/CustomGenerator.json` | Конфиг |
 | `HarmonyConfig/CustomGenerator.schema.json` | Схема конфига для подсказок в редакторе (создаётся сама, не редактируйте) |
 | `HarmonyConfig/logs/cgen_*.log` | Логи мода, по файлу на запуск |
-| `maps/` | Сгенерированные карты (`.map`) |
+| `maps/` | Сгенерированные карты (`.map`) и отчёты о генерации (`.report.txt`) |
 | `maps/prefabs/` | Ваши монументы для свапа |
 | `mapimages/` | Превью карт (`.png`) |
 | `mapimages/resources/` | Шрифты для превью (скачиваются сами) |
@@ -56,11 +56,51 @@
    ```
 2. Мод создаст `HarmonyConfig/CustomGenerator.json`, сгенерирует карту по стандартным настройкам и выключит сервер.
 3. Отредактируйте конфиг и запустите сервер снова. Каждый запуск даёт новую карту.
-4. Результат появится в `maps/CustomGenerator<размер>_<сид>.map`, превью в `mapimages/`.
+4. Результат появится в `maps/CustomGenerator<размер>_<сид>.map`, превью в `mapimages/`, а [отчёт о генерации](#отчёт-о-генерации) — в `maps/CustomGenerator<размер>_<сид>.report.txt`.
 
 Генерация карты 4000 занимает около 5–10 минут, рендер превью ещё около минуты.
 
 > Сид и размер задаются параметрами запуска сервера, а не конфигом мода.
+
+### Отчёт о генерации
+В конце каждого запуска мод выводит итог в лог и сохраняет его рядом с картой как `<имя карты>.report.txt`:
+
+```
+===== CustomGenerator report =====
+Map:   C:\rust\maps\CustomGenerator2000_4242.map
+Image: C:\rust\mapimages\CustomGenerator2000_4242.png
+Size:  2000, seed 4242
+Time:  3m 46s since server start
+
+Monuments:
+  Mountains             0
+  Harbors               3  ferry_terminal_1, harbor_1, harbor_2
+  Fishing Villages      3  fishing_village_a, fishing_village_c, fishing_village_b
+  Desert Military       1  desert_military_base_c
+  Main Monuments        5  bandit_town, mining_quarry_b, sphere_tank, radtown_small_3, mining_quarry_c
+  Tunnel Entrances      1  entrance_bunker_c
+  Road Monuments        0
+  Caves                 2  cave_small_medium, cave_small_easy
+  Underwater Labs       1  underwater_lab_c
+  Lighthouses           2  lighthouse x2
+
+Custom monuments:
+  Cobalt Bunker      3/3
+  Jungle Refinery    3/3
+
+Swap:
+  fishing_village_c.prefab.map    1 replaced
+  gas_station_1.prefab.map        0 replaced  no such monument on the map
+  nothing_here.prefab.map         0 replaced  no such monument on the map
+  Saved to C:\rust\maps\CustomGenerator2000_4242.swapped.map
+
+Warnings: 3, errors: 0 - see C:\rust\HarmonyConfig\logs\cgen_2026-09-27_01-35-08.log
+==================================
+```
+
+- **Monuments** — что поставил каждый шаг генерации, с именами префабов. `2/5` значит 2 из 5, заданных в конфиге; цель показывается, только когда она точная (`TargetCount` при `IgnoreWorldSizeMultiplier: true`).
+- **Custom monuments** и **Swap** появляются, когда они включены, с причиной, если что-то не встало или не заменилось.
+- **Warnings / errors** — если они есть, ищите их в файле лога, указанном в этой строке.
 
 ---
 

@@ -65,6 +65,7 @@ For help, report issue and etc. join [our discord](https://discord.gg/xUdpkm8RUS
   - Swap specific monument types (e.g., replace Outpost with custom version)
   - Keep original monument positions and connections
 - [x] Save both map versions (with and without swaps)
+- [x] Generation report: placed monuments, custom monuments, swaps, warnings (in the log and next to the map)
 - [x] Config in English or Russian, switchable in the config itself
 - [x] Config validation with warnings in the log, automatic backup on update
 

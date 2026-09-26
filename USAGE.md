@@ -41,7 +41,7 @@ Where things are (all paths are relative to the server folder that contains `Rus
 | `HarmonyConfig/CustomGenerator.json` | Config |
 | `HarmonyConfig/CustomGenerator.schema.json` | Config schema for editor hints (regenerated, don't edit) |
 | `HarmonyConfig/logs/cgen_*.log` | Mod logs, one file per run |
-| `maps/` | Generated maps (`.map`) |
+| `maps/` | Generated maps (`.map`) and generation reports (`.report.txt`) |
 | `maps/prefabs/` | Your monuments for swapping |
 | `mapimages/` | Map previews (`.png`) |
 | `mapimages/resources/` | Fonts for previews (downloaded automatically) |
@@ -56,11 +56,51 @@ Where things are (all paths are relative to the server folder that contains `Rus
    ```
 2. The mod creates `HarmonyConfig/CustomGenerator.json`, generates a map with the default settings and shuts the server down.
 3. Edit the config and start the server again. Every run generates a new map.
-4. The map is saved to `maps/CustomGenerator<size>_<seed>.map` and the preview to `mapimages/`.
+4. The map is saved to `maps/CustomGenerator<size>_<seed>.map`, the preview to `mapimages/`, and the [generation report](#generation-report) to `maps/CustomGenerator<size>_<seed>.report.txt`.
 
 A 4000 map takes about 5–10 minutes to generate, plus about a minute to render the preview.
 
 > Seed and size come from the server launch parameters, not from the mod config.
+
+### Generation report
+At the end of every run the mod prints a summary to the log and saves it next to the map as `<map name>.report.txt`:
+
+```
+===== CustomGenerator report =====
+Map:   C:\rust\maps\CustomGenerator2000_4242.map
+Image: C:\rust\mapimages\CustomGenerator2000_4242.png
+Size:  2000, seed 4242
+Time:  3m 46s since server start
+
+Monuments:
+  Mountains             0
+  Harbors               3  ferry_terminal_1, harbor_1, harbor_2
+  Fishing Villages      3  fishing_village_a, fishing_village_c, fishing_village_b
+  Desert Military       1  desert_military_base_c
+  Main Monuments        5  bandit_town, mining_quarry_b, sphere_tank, radtown_small_3, mining_quarry_c
+  Tunnel Entrances      1  entrance_bunker_c
+  Road Monuments        0
+  Caves                 2  cave_small_medium, cave_small_easy
+  Underwater Labs       1  underwater_lab_c
+  Lighthouses           2  lighthouse x2
+
+Custom monuments:
+  Cobalt Bunker      3/3
+  Jungle Refinery    3/3
+
+Swap:
+  fishing_village_c.prefab.map    1 replaced
+  gas_station_1.prefab.map        0 replaced  no such monument on the map
+  nothing_here.prefab.map         0 replaced  no such monument on the map
+  Saved to C:\rust\maps\CustomGenerator2000_4242.swapped.map
+
+Warnings: 3, errors: 0 - see C:\rust\HarmonyConfig\logs\cgen_2026-09-27_01-35-08.log
+==================================
+```
+
+- **Monuments**: what each generation step placed, with prefab names. `2/5` means 2 of the 5 set in the config; the target is shown only when it's exact (`TargetCount` with `IgnoreWorldSizeMultiplier: true`).
+- **Custom monuments** and **Swap** appear when they're enabled, with the reason when something wasn't placed or replaced.
+- **Warnings / errors**: if there are any, look them up in the log file named on that line.
 
 ---
 

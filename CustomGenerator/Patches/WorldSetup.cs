@@ -42,6 +42,7 @@ namespace CustomGenerator.Patches {
             }
 
             MapImage.RenderMap(0.75f, 150);
+            GenerationReport.Write(Path.Combine(World.MapFolderName, World.MapFileName));
             
             //Rust.Application.Quit();
             Application.Quit();

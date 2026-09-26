@@ -423,6 +423,7 @@ namespace CustomGenerator.Custom
                     data = CustomMonumentData.Load(Path.Combine(settings.Folder, cfg.File));
                 } catch (Exception ex) {
                     Logging.Error($"Custom monument '{name}': failed to load {cfg.File}", ex);
+                    GenerationReport.CustomMonument(name, 0, cfg.Count, "failed to load the file");
                     continue;
                 }
                 if (data.UnknownPrefabs > 0)
@@ -445,6 +446,7 @@ namespace CustomGenerator.Custom
                     Logging.Generation($"Custom monument '{name}' #{done}: {position.x:0}, {position.z:0} (height {baseHeight:0.0}, rotation {angle:0})");
                 }
                 Logging.Generation($"Custom monument '{name}': placed {done}/{cfg.Count}, radius {radius:0}m, {data.Items.Count} prefabs each");
+                GenerationReport.CustomMonument(name, done, cfg.Count, done < cfg.Count ? "no room for the rest, see the log" : null);
             }
         }
 

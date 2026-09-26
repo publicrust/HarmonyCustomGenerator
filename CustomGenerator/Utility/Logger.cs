@@ -10,6 +10,8 @@ namespace CustomGenerator.Utility
         private static readonly string LogFile;
         private static bool isInitialized;
 
+        public static string LogFilePath => LogFile == null ? LogFolder : Path.GetFullPath(LogFile);
+
         static Logging()
         {
             try
@@ -52,6 +54,7 @@ namespace CustomGenerator.Utility
         public static void Warning(string message)
         {
             string formattedMessage = $"[WARN] {DateTime.Now:HH:mm:ss} | {message}";
+            GenerationReport.Warnings++;
             Debug.LogWarning($"[CGen] {message}");
             WriteToFile(formattedMessage);
         }
@@ -59,6 +62,7 @@ namespace CustomGenerator.Utility
         public static void Error(string message, Exception ex = null)
         {
             string formattedMessage = $"[ERROR] {DateTime.Now:HH:mm:ss} | {message}";
+            GenerationReport.Errors++;
             if (ex != null)
                 formattedMessage += $"\n{ex.GetType()}: {ex.Message}\n{ex.StackTrace}";
             

@@ -59,7 +59,7 @@ namespace CustomGenerator.Utility {
             string fullPath = Path.GetFullPath(Path.Combine(Environment.CurrentDirectory, $"mapimages/{mapName}.png"));
             File.WriteAllBytes(fullPath, array);
             Logging.Info($"Generated Map image: {fullPath}");
-            Logging.Info($"Map saved to {Path.GetFullPath(Path.Combine(World.MapFolderName, World.MapFileName))}");
+            GenerationReport.Image(fullPath);
         }
     }
 
