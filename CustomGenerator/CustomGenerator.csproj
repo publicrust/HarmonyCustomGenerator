@@ -36,6 +36,7 @@
   <ItemGroup>
     <Compile Include="Bootstrap.cs" />
     <Compile Include="Config.cs" />
+    <Compile Include="Custom\CustomMonuments.cs" />
     <Compile Include="Custom\SwapMonument.cs" />
     <Compile Include="HarmonyHooks.cs" />
     <Compile Include="Patches\Monuments.cs" />
@@ -169,6 +170,9 @@
     </Reference>
     <Reference Include="Rust.World">
       <HintPath>$(RustServerDir)RustDedicated_Data\Managed\Rust.World.dll</HintPath>
+    </Reference>
+    <Reference Include="LZ4">
+      <HintPath>$(RustServerDir)RustDedicated_Data\Managed\LZ4.dll</HintPath>
     </Reference>
     <Reference Include="System" />
     <Reference Include="System.Buffers, Version=4.0.4.0, Culture=neutral, PublicKeyToken=cc7b13ffcd2ddd51, processorArchitecture=MSIL">

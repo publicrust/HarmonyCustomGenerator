@@ -265,6 +265,12 @@ namespace CustomGenerator.Utility {
                     mapMonuments.Add(new MapMonument { name = name, x = x, y = z, indication = Indication.None });
             }
 
+            foreach (var custom in tempData.customMonuments) {
+                int x = (int)(((custom.Value.x + (tempData.mapsize / 2.0)) / tempData.mapsize) * mapResolution) + originalMapOffset;
+                int z = (int)(((custom.Value.z + (tempData.mapsize / 2.0)) / tempData.mapsize) * mapResolution) + originalMapOffset;
+                mapMonuments.Add(new MapMonument { name = custom.Key, x = x, y = z, indication = Indication.Regular });
+            }
+
             RenderMonument(mapMonuments, PermanentMarkerFont, ref output);
             RenderGithub(DinProFontBold, ref output, mapResolution, imageWidth);
         }

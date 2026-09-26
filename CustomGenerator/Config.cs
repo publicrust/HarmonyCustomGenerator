@@ -36,6 +36,9 @@ namespace CustomGenerator
             [Loc("Monuments", "Монументы")]
             public MonumentSettings Monuments = new();
 
+            [Loc("Custom Monuments", "Кастомные Монументы")]
+            public CustomMonumentSettings CustomMonuments = new();
+
             [JsonProperty(Order = -1)]
             public string Version = CurrentVersion;
         }
@@ -80,6 +83,43 @@ namespace CustomGenerator
             public TierSettings Tier = new ();
             [Loc("Biome Percentages (Arid+Temperate+Tundra+Arctic = 100, Jungle is separate)", "Проценты Биомов (Пустыня+Умеренный+Тундра+Арктика = 100, Джунгли отдельно)")]
             public BiomSettings Biom = new ();
+        }
+
+        public sealed class CustomMonumentSettings {
+            [Loc("Enabled", "Включить")]
+            public bool Enabled = false;
+            [Loc("Folder with .map files (relative to server root)", "Папка с .map файлами (относительно папки сервера)")]
+            public string Folder = "maps/custom";
+            [Loc("List", "Список")]
+            public List<CustomMonument> List = new();
+        }
+
+        public class CustomMonument {
+            public bool Enabled = true;
+            public string Name = "";
+            // File in the custom monuments folder, e.g. "my_gas_station.map"
+            public string File = "";
+            public int Count = 1;
+
+            // Footprint radius in meters, 0 = auto from prefab positions
+            public float Radius = 0f;
+            // Width of the transition ring between the monument terrain and the world, meters
+            public float Blend = 25f;
+            // Stamp = terrain heights from the .map, Flatten = flat pad, None = keep world terrain
+            public string HeightMode = "Stamp";
+            public bool CopySplat = false;
+            public bool CopyTopology = false;
+            // Terrain holes (e.g. bunker entrances)
+            public bool CopyAlpha = true;
+            public bool RandomRotation = true;
+
+            // Placement checks on the world terrain before stamping
+            public float MaxHeightDifference = 15f;
+            public float MinHeight = 2f;
+            public float MaxHeight = 150f;
+            public int MinDistanceToMonuments = 150;
+            public int MinDistanceSameType = 500;
+            public SpawnFilterCfg Filter = new SpawnFilterCfg();
         }
 
         public sealed class SwapSettings {
@@ -182,6 +222,7 @@ namespace CustomGenerator
             public TerrainTexturing terrainTexturing;
             public TerrainMeta terrainMeta;
             public TerrainPath terrainPath;
+            public List<KeyValuePair<string, Vector3>> customMonuments = new();
         }
 
         private static JsonSerializerSettings SerializerSettings(string language) => new() {
@@ -323,6 +364,47 @@ namespace CustomGenerator
                     copies[pair.Key.Trim().ToLowerInvariant()] = Math.Max(0, pair.Value);
                 }
                 monument.PrefabCopies = copies;
+
+                var filter = monument.Filter ??= new SpawnFilterCfg();
+                filter.SplatType = ValidEnumNames<TerrainSplat.Enum>(filter.SplatType, name, "SplatType");
+                filter.BiomeType = ValidEnumNames<TerrainBiome.Enum>(filter.BiomeType, name, "BiomeType");
+                filter.TopologyAny = ValidEnumNames<TerrainTopology.Enum>(filter.TopologyAny, name, "TopologyAny");
+                filter.TopologyAll = ValidEnumNames<TerrainTopology.Enum>(filter.TopologyAll, name, "TopologyAll");
+                filter.TopologyNot = ValidEnumNames<TerrainTopology.Enum>(filter.TopologyNot, name, "TopologyNot");
+            }
+
+            var custom = Config.CustomMonuments ??= new CustomMonumentSettings();
+            custom.List ??= new List<CustomMonument>();
+            if (string.IsNullOrWhiteSpace(custom.Folder)) custom.Folder = new CustomMonumentSettings().Folder;
+            foreach (var monument in custom.List) {
+                string name = string.IsNullOrEmpty(monument.Name) ? monument.File : monument.Name;
+
+                if (string.IsNullOrWhiteSpace(monument.File)) {
+                    Logging.Warning($"Custom monument '{name}': File is empty, disabled");
+                    monument.Enabled = false;
+                } else if (custom.Enabled && monument.Enabled && !File.Exists(Path.Combine(custom.Folder, monument.File))) {
+                    Logging.Warning($"Custom monument '{name}': file {Path.Combine(custom.Folder, monument.File)} not found, disabled");
+                    monument.Enabled = false;
+                }
+
+                var modes = new[] { "Stamp", "Flatten", "None" };
+                string mode = modes.FirstOrDefault(x => string.Equals(x, monument.HeightMode?.Trim(), StringComparison.OrdinalIgnoreCase));
+                if (mode == null) Logging.Warning($"Custom monument '{name}': unknown HeightMode '{monument.HeightMode}' (valid: {string.Join(", ", modes)}), using Stamp");
+                monument.HeightMode = mode ?? "Stamp";
+
+                if (monument.Count < 0 || monument.Radius < 0 || monument.Blend < 0 || monument.MaxHeightDifference < 0 || monument.MinDistanceToMonuments < 0 || monument.MinDistanceSameType < 0) {
+                    Logging.Warning($"Custom monument '{name}': negative values replaced with 0");
+                    monument.Count = Math.Max(0, monument.Count);
+                    monument.Radius = Math.Max(0, monument.Radius);
+                    monument.Blend = Math.Max(0, monument.Blend);
+                    monument.MaxHeightDifference = Math.Max(0, monument.MaxHeightDifference);
+                    monument.MinDistanceToMonuments = Math.Max(0, monument.MinDistanceToMonuments);
+                    monument.MinDistanceSameType = Math.Max(0, monument.MinDistanceSameType);
+                }
+                if (monument.MinHeight > monument.MaxHeight) {
+                    Logging.Warning($"Custom monument '{name}': MinHeight > MaxHeight, values swapped");
+                    (monument.MinHeight, monument.MaxHeight) = (monument.MaxHeight, monument.MinHeight);
+                }
 
                 var filter = monument.Filter ??= new SpawnFilterCfg();
                 filter.SplatType = ValidEnumNames<TerrainSplat.Enum>(filter.SplatType, name, "SplatType");
