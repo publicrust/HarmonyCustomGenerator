@@ -17,11 +17,19 @@ namespace CustomGenerator
         private static readonly string CurrentVersion = "0.2.5";
 
         private static readonly string Location = Path.Combine("HarmonyConfig", "CustomGenerator.json");
+        private static readonly string SchemaLocation = Path.Combine("HarmonyConfig", "CustomGenerator.schema.json");
 
         static ExtConfig() => LoadConfig();
 
         public class ConfigData {
+            // Lets editors (VS Code etc.) pick up the schema written next to the config
+            [JsonProperty("$schema", Order = -3)]
+            public string SchemaPath = "./" + Path.GetFileName(SchemaLocation);
+
             [JsonProperty("Language (en/ru)", Order = -2)]
+            [Desc("Config language. Change it and restart the server: keys are rewritten in this language, values are kept",
+                  "Язык конфига. Измените и перезапустите сервер: ключи перепишутся на этом языке, значения сохранятся")]
+            [Schema(Values = new[] { "en", "ru" })]
             public string Language = DetectLanguage();
 
             [Loc("Map Settings", "Настройки Карты")]
@@ -40,6 +48,7 @@ namespace CustomGenerator
             public CustomMonumentSettings CustomMonuments = new();
 
             [JsonProperty(Order = -1)]
+            [Desc("Mod version the config was written by. Don't edit", "Версия мода, которой записан конфиг. Не изменяйте")]
             public string Version = CurrentVersion;
         }
         public sealed class MapSettings {
@@ -56,13 +65,17 @@ namespace CustomGenerator
         }
 
         public sealed class GeneratorSettings {
+            [Desc("Roads: ring road and roadside monuments/objects", "Дороги: кольцевая дорога и придорожные монументы/объекты")]
             public SimplePath Road = new();
+            [Desc("Rails: ring rail and railside monuments", "Железная дорога: кольцо и монументы у железной дороги")]
             public SimplePath Rail = new();
+            [Desc("Oases, canyons and lakes on any map size", "Оазисы, каньоны и озёра на любом размере карты")]
             public UniqueEnviroment UniqueEnviroment = new();
 
             [Loc("Remove Rivers", "Удалить реки")]
             public bool RemoveRivers = false;
             [Loc("River width scale (1 = default)", "Множитель ширины рек (1 = по умолчанию)")]
+            [Schema(Min = 0)]
             public float RiverWidthScale = 1f;
 
             [Loc("Remove Car Wrecks around Road", "Удалить разбитые префабы машин около дороги")]
@@ -95,30 +108,51 @@ namespace CustomGenerator
         }
 
         public class CustomMonument {
+            [Desc("Place this monument", "Размещать этот монумент")]
             public bool Enabled = true;
+            [Desc("Name for the log, the file name is used if empty", "Имя для лога, если пусто - используется имя файла")]
             public string Name = "";
-            // File in the custom monuments folder, e.g. "my_gas_station.map"
+            [Desc("File in the custom monuments folder, e.g. \"my_gas_station.map\" or \"my_gas_station.prefab\"",
+                  "Файл в папке кастомных монументов, например \"my_gas_station.map\" или \"my_gas_station.prefab\"")]
             public string File = "";
+            [Desc("How many copies to place (fewer if there is no room)", "Сколько копий разместить (меньше, если не хватит места)")]
+            [Schema(Min = 0)]
             public int Count = 1;
 
-            // Footprint radius in meters, 0 = auto from prefab positions
+            [Desc("Footprint radius in meters, 0 = auto from prefab positions", "Радиус площадки в метрах, 0 = автоматически по префабам")]
+            [Schema(Min = 0)]
             public float Radius = 0f;
-            // Width of the transition ring between the monument terrain and the world, meters
+            [Desc("Width of the transition ring between the monument terrain and the world, meters",
+                  "Ширина переходного кольца между рельефом монумента и миром, в метрах")]
+            [Schema(Min = 0)]
             public float Blend = 25f;
-            // Stamp = terrain heights from the .map, Flatten = flat pad, None = keep world terrain
+            [Desc("Stamp = terrain heights from the file, Flatten = flat pad, None = keep world terrain",
+                  "Stamp = рельеф из файла, Flatten = ровная площадка, None = оставить рельеф мира")]
+            [Schema(Values = new[] { "Stamp", "Flatten", "None" })]
             public string HeightMode = "Stamp";
+            [Desc("Copy ground textures from the file", "Копировать текстуры земли из файла")]
             public bool CopySplat = false;
+            [Desc("Copy topology from the file", "Копировать топологию из файла")]
             public bool CopyTopology = false;
-            // Terrain holes (e.g. bunker entrances)
+            [Desc("Copy terrain holes (e.g. bunker entrances)", "Копировать дыры в рельефе (например, входы в бункеры)")]
             public bool CopyAlpha = true;
+            [Desc("Rotate every copy randomly", "Поворачивать каждую копию случайно")]
             public bool RandomRotation = true;
 
-            // Placement checks on the world terrain before stamping
+            [Desc("Max height difference of the world terrain under the footprint, meters", "Макс. перепад высот рельефа мира под площадкой, в метрах")]
+            [Schema(Min = 0)]
             public float MaxHeightDifference = 15f;
+            [Desc("Min terrain height (above sea level) at the center", "Мин. высота рельефа (над уровнем моря) в центре")]
             public float MinHeight = 2f;
+            [Desc("Max terrain height (above sea level) at the center", "Макс. высота рельефа (над уровнем моря) в центре")]
             public float MaxHeight = 150f;
+            [Desc("Min distance to any other monument, meters", "Мин. расстояние до любого другого монумента, в метрах")]
+            [Schema(Min = 0)]
             public int MinDistanceToMonuments = 150;
+            [Desc("Min distance between copies of this monument, meters", "Мин. расстояние между копиями этого монумента, в метрах")]
+            [Schema(Min = 0)]
             public int MinDistanceSameType = 500;
+            [Desc("Where the monument may stand", "Где может стоять монумент")]
             public SpawnFilterCfg Filter = new SpawnFilterCfg();
         }
 
@@ -138,32 +172,56 @@ namespace CustomGenerator
         }
 
         public class Monument {
+            [Desc("true = apply the settings below, false = keep the group vanilla", "true = применить настройки ниже, false = оставить группу стандартной")]
             public bool ShouldChange;
+            [Desc("false = don't generate the group at all (needs ShouldChange: true)", "false = не генерировать группу вообще (нужен ShouldChange: true)")]
             public bool Generate;
+            [Desc("Group name (for the log)", "Название группы (для лога)")]
             public string Description;
+            [Desc("Group path in the bundles, the group is found by it. Don't change, use OverrideFolder",
+                  "Путь группы в бандлах, по нему ищется группа. Не изменяйте, используйте OverrideFolder")]
             public string Folder;
 
+            [Desc("Min map size for the group to appear, 0 = any", "Мин. размер карты, на котором появляется группа, 0 = любой")]
+            [Schema(Min = 0)]
             public int MinWorldSize = 0;
+            [Desc("How many monuments to place, 0 = every prefab of the group", "Сколько монументов разместить, 0 = все префабы группы")]
+            [Schema(Min = 0)]
             public int TargetCount = 0;
 
             [JsonConverter(typeof(StringEnumConverter))]
+            [Desc("Placement preference relative to the same group: Max = far, Min = close, Any = no preference",
+                  "Предпочтение размещения относительно своей группы: Max = подальше, Min = поближе, Any = без разницы")]
             public PlaceMonuments.DistanceMode distanceSame = PlaceMonuments.DistanceMode.Max;
+            [Desc("Min distance to monuments of the same group, meters", "Мин. расстояние до монументов своей группы, в метрах")]
+            [Schema(Min = 0)]
             public int MinDistanceSameType = 500;
 
             [JsonConverter(typeof(StringEnumConverter))]
+            [Desc("Placement preference relative to other groups: Max = far, Min = close, Any = no preference",
+                  "Предпочтение размещения относительно других групп: Max = подальше, Min = поближе, Any = без разницы")]
             public PlaceMonuments.DistanceMode distanceDifferent = PlaceMonuments.DistanceMode.Any;
+            [Desc("Min distance to monuments of other groups, meters", "Мин. расстояние до монументов других групп, в метрах")]
+            [Schema(Min = 0)]
             public int MinDistanceDifferentType = 0;
 
+            [Desc("Where the monument may stand", "Где может стоять монумент")]
             public SpawnFilterCfg Filter = new SpawnFilterCfg();
 
-            // Empty = vanilla folder. Path inside the game bundles (not on disk), comma separated, relative to assets/bundled/prefabs/autospawn/
+            [Desc("Different path inside the game bundles (not on disk), relative to assets/bundled/prefabs/autospawn/, comma separated. Empty = vanilla",
+                  "Другой путь в бандлах игры (не на диске), относительно assets/bundled/prefabs/autospawn/, через запятую. Пусто = стандартный")]
             public string OverrideFolder = "";
-            // Parts of prefab file names (without folder), e.g. "harbor_1". Include empty = all prefabs of the group
+            [Desc("Keep only prefabs whose name (without folder) contains one of these strings, e.g. \"harbor_1\". Empty = all",
+                  "Оставить только префабы, в имени которых (без папки) есть одна из строк, например \"harbor_1\". Пусто = все")]
             public List<string> IncludePrefabs = new List<string>();
+            [Desc("Remove prefabs whose name contains one of these strings", "Убрать префабы, в имени которых есть одна из строк")]
             public List<string> ExcludePrefabs = new List<string>();
-            // Part of prefab name -> how many copies go to the candidate pool (0 = none)
+            [Desc("\"part of name\": N - how many copies of the prefab go to the candidate pool, 0 = none",
+                  "\"часть имени\": N - сколько копий префаба попадёт в пул кандидатов, 0 = ни одной")]
+            [Schema(Min = 0)]
             public Dictionary<string, int> PrefabCopies = new Dictionary<string, int>();
-            // Vanilla scales TargetCount by world size (curve defined only up to 6000)
+            [Desc("true = place exactly TargetCount (vanilla scales it by map size, curve defined only up to 6000)",
+                  "true = ставить ровно TargetCount (игра умножает его на коэффициент размера карты, заданный только до 6000)")]
             public bool IgnoreWorldSizeMultiplier = false;
 
             [JsonIgnore]
@@ -179,21 +237,38 @@ namespace CustomGenerator
         //}
         public class SpawnFilterCfg
         {
+            [Desc("true = use this filter instead of the vanilla one", "true = использовать этот фильтр вместо стандартного")]
             public bool Enabled = false;
+            [Desc("Allowed ground textures, empty = any", "Разрешённые текстуры земли, пусто = любые")]
+            [Schema(Enum = typeof(TerrainSplat.Enum))]
             public List<string> SplatType = new List<string>();
+            [Desc("Allowed biomes, empty = any", "Разрешённые биомы, пусто = любые")]
+            [Schema(Enum = typeof(TerrainBiome.Enum))]
             public List<string> BiomeType = new List<string>();
+            [Desc("At least one of these topologies, empty = any", "Хотя бы одна из этих топологий, пусто = любая")]
+            [Schema(Enum = typeof(TerrainTopology.Enum))]
             public List<string> TopologyAny = new List<string>();
+            [Desc("All of these topologies, empty = no condition", "Все эти топологии, пусто = без условия")]
+            [Schema(Enum = typeof(TerrainTopology.Enum))]
             public List<string> TopologyAll = new List<string>();
+            [Desc("None of these topologies, empty = no condition", "Ни одной из этих топологий, пусто = без условия")]
+            [Schema(Enum = typeof(TerrainTopology.Enum))]
             public List<string> TopologyNot = new List<string>();
         }
         public class SimplePath {
+            [Desc("Master switch: false = vanilla, other fields are ignored", "Главный переключатель: false = как в игре, остальные поля игнорируются")]
             public bool ShouldChange = true;
+            [Desc("The ring. false = no ring on any map size", "Кольцо. false = без кольца на любом размере карты")]
             public bool Enabled = true;
+            [Desc("Generate the ring on any map size (vanilla: large maps only)", "Генерировать кольцо на любом размере карты (в игре - только на больших)")]
             public bool GenerateRing = true;
+            [Desc("Roadside/railside monuments: gas stations, supermarkets, stations, etc.", "Монументы у дороги/железной дороги: заправки, супермаркеты, станции и т.д.")]
             public bool GenerateSideMonuments = true;
+            [Desc("Road only: roadside objects. Does nothing for Rail", "Только для Road: придорожные объекты. Для Rail ни на что не влияет")]
             public bool GenerateSideObjects = false;
         }
         public class UniqueEnviroment {
+            [Desc("Master switch: false = vanilla (only on maps 4000-4500+)", "Главный переключатель: false = как в игре (только на картах от 4000-4500)")]
             public bool ShouldChange = true;
             public bool GenerateOasis = true;
             public bool GenerateCanyons = true;
@@ -201,17 +276,18 @@ namespace CustomGenerator
         }
 
         public sealed class TierSettings {
-            public float Tier0 = 30f;
-            public float Tier1 = 30f;
-            public float Tier2 = 40f;
+            [Schema(Min = 0)] public float Tier0 = 30f;
+            [Schema(Min = 0)] public float Tier1 = 30f;
+            [Schema(Min = 0)] public float Tier2 = 40f;
         }
 
         public sealed class BiomSettings {
-            public float Arid = 40f;
-            public float Temperate = 15f;
-            public float Tundra = 15f;
-            public float Arctic = 30f;
-            public float Jungle = 50f;
+            [Schema(Min = 0)] public float Arid = 40f;
+            [Schema(Min = 0)] public float Temperate = 15f;
+            [Schema(Min = 0)] public float Tundra = 15f;
+            [Schema(Min = 0)] public float Arctic = 30f;
+            [Desc("Separate from the others, 0-100", "Отдельно от остальных, 0-100")]
+            [Schema(Min = 0, Max = 100)] public float Jungle = 50f;
         }
 
         public sealed class TempData {
@@ -301,6 +377,17 @@ namespace CustomGenerator
             catch (Exception ex)
             {
                 Logging.Error("Failed to save configuration", ex);
+            }
+            SaveSchema();
+        }
+
+        // Regenerated on every save, so it always matches the mod version and the config's language
+        private static void SaveSchema() {
+            try {
+                var schema = ConfigSchema.Build(typeof(ConfigData), new LocalizedContractResolver(Config.Language), Config.Language == "ru");
+                File.WriteAllText(SchemaLocation, schema.ToString(Formatting.Indented));
+            } catch (Exception ex) {
+                Logging.Error("Failed to save config schema", ex);
             }
         }
 

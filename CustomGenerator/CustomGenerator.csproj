@@ -46,6 +46,7 @@
     <Compile Include="Patches\World.cs" />
     <Compile Include="Patches\WorldSetup.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
+    <Compile Include="Utility\ConfigSchema.cs" />
     <Compile Include="Utility\EnumParser.cs" />
     <Compile Include="Utility\Logger.cs" />
     <Compile Include="Utility\MapImage.cs" />

@@ -38,6 +38,7 @@ Where things are (all paths are relative to the server folder that contains `Rus
 |---|---|
 | `HarmonyMods/CustomGenerator.dll` | The mod |
 | `HarmonyConfig/CustomGenerator.json` | Config |
+| `HarmonyConfig/CustomGenerator.schema.json` | Config schema for editor hints (regenerated, don't edit) |
 | `HarmonyConfig/logs/cgen_*.log` | Mod logs, one file per run |
 | `maps/` | Generated maps (`.map`) |
 | `maps/prefabs/` | Your monuments for swapping |
@@ -72,6 +73,14 @@ The first field of the config:
 A new config uses your system language. Keys are accepted in **both** languages: change the value to `en` or `ru`, restart the server, and the file is rewritten with keys in the selected language. All values are kept.
 
 This guide uses English keys, with the Russian key in parentheses where it helps.
+
+### Editor hints
+Next to the config the mod writes `CustomGenerator.schema.json`, and the config's first line links to it (`"$schema"`). Open the config in **VS Code** (or another editor with JSON Schema support) and you get:
+- a description of every option on hover, in the config's language;
+- autocompletion of keys and allowed values (biomes, textures, topologies, `HeightMode`, `distanceSame`, etc.);
+- underlined mistakes: a misspelled biome, a negative distance, text instead of a number.
+
+The schema is rewritten on every run, so it always matches your mod version. Don't edit it and don't remove the `"$schema"` line.
 
 ### Version and updates
 Don't edit the `"Version"` field. When you update the mod:
