@@ -1,0 +1,54 @@
+name: Build
+
+on:
+  push:
+    branches: [main, dev]
+    tags: ['v*']
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  build:
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: microsoft/setup-msbuild@v2
+
+      # Only the managed DLLs of the Rust dedicated server (~25 MB), anonymous Steam login
+      - name: Download Rust server references
+        run: |
+          Invoke-WebRequest https://github.com/SteamRE/DepotDownloader/releases/download/DepotDownloader_3.4.0/DepotDownloader-windows-x64.zip -OutFile depotdownloader.zip
+          Expand-Archive depotdownloader.zip depotdownloader
+          Set-Content filelist.txt 'regex:^RustDedicated_Data[\\/]Managed[\\/].*\.dll$'
+          ./depotdownloader/DepotDownloader.exe -app 258550 -os windows -filelist filelist.txt -dir rust
+          if (-not (Test-Path rust/RustDedicated_Data/Managed/Assembly-CSharp.dll)) { throw "Rust server DLLs were not downloaded" }
+
+      - name: Build
+        run: msbuild CustomGenerator/CustomGenerator.csproj -p:Configuration=Release -p:RustServerDir=${{ github.workspace }}\rust\ -v:m
+
+      # Same layout as the server folder: unpack the zip into the server root
+      - name: Package
+        run: |
+          $name = if ($env:GITHUB_REF_TYPE -eq 'tag') { "CustomGenerator-$env:GITHUB_REF_NAME" } else { "CustomGenerator-$($env:GITHUB_SHA.Substring(0, 7))" }
+          New-Item -ItemType Directory package/HarmonyMods, package/mapimages/resources | Out-Null
+          Copy-Item CustomGenerator/bin/Release/CustomGenerator.dll package/HarmonyMods/
+          Copy-Item Resources/* package/mapimages/resources/
+          Copy-Item README.md, README_RU.md, USAGE.md, USAGE_RU.md, SWAP_MONUMENTS.md, LICENSE package/
+          Compress-Archive package/* "$name.zip"
+          "PACKAGE=$name" >> $env:GITHUB_ENV
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: ${{ env.PACKAGE }}
+          path: package/
+
+      - name: Release
+        if: github.ref_type == 'tag'
+        uses: softprops/action-gh-release@v2
+        with:
+          files: ${{ env.PACKAGE }}.zip
+          generate_release_notes: true

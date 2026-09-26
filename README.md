@@ -5,7 +5,7 @@
 
 Allows you to generate semi-custom maps on default Rust generator.
 
-For installation, full config reference and monument swap instructions, see [USAGE.md](USAGE.md).
+Download the latest build from [Releases](https://github.com/publicrust/HarmonyCustomGenerator/releases). For installation, full config reference and monument swap instructions, see [USAGE.md](USAGE.md).
 
 > ⚠️ The mod is for **map generation only**: once the map is saved it shuts the server down. Don't keep it on a live server.
 

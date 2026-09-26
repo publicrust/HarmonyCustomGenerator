@@ -31,7 +31,7 @@ The mod hooks into the vanilla Rust map generator through Harmony and changes it
 ## Installation
 
 1. You need a Rust Dedicated Server. Harmony 2.3 is already included.
-2. Copy `CustomGenerator.dll` to `<server folder>/HarmonyMods/`.
+2. Download `CustomGenerator-<version>.zip` from [Releases](https://github.com/publicrust/HarmonyCustomGenerator/releases) and unpack it into the server folder, next to `RustDedicated.exe`. It contains `HarmonyMods/CustomGenerator.dll` and the preview fonts in `mapimages/resources/`.
 3. That's it. The config is created on the first run.
 
 Where things are (all paths are relative to the server folder that contains `RustDedicated.exe`):
@@ -45,7 +45,7 @@ Where things are (all paths are relative to the server folder that contains `Rus
 | `maps/` | Generated maps (`.map`) and generation reports (`.report.txt`) |
 | `maps/prefabs/` | Your monuments for swapping |
 | `mapimages/` | Map previews (`.png`) |
-| `mapimages/resources/` | Fonts for previews (downloaded automatically) |
+| `mapimages/resources/` | Fonts for previews (in the release archive, otherwise downloaded automatically) |
 
 ---
 
@@ -616,7 +616,7 @@ They work together. For example, make 3 harbors with `PrefabCopies` and replace 
 | A custom monument wasn't placed | Look for `no suitable spot found` in the log: lower the distances, raise `MaxHeightDifference`, widen `MinHeight`–`MaxHeight`, loosen `Filter`, use a bigger map. File errors are logged too |
 | A custom monument floats or is buried | `.map`: is the anchor (first prefab) on the ground? `.prefab`: is `y = 0` the ground level? Try `"HeightMode": "Flatten"` |
 | The preview shows the old monuments | Expected: the preview is rendered before the swap. Check the result in RustEdit |
-| No preview or a font error | No internet access: copy the fonts from the repository's `Resources/` folder to `mapimages/resources/` |
+| No preview or a font error | The fonts come with the release archive. Otherwise the mod downloads them, so without internet access copy them from the repository's `Resources/` folder to `mapimages/resources/`. Also check `Map Image → Enabled` |
 | A map above 6000 looks broken | The Rust client doesn't support such sizes, stay at 6000 or below |
 
 For support, join [our Discord](https://discord.gg/xUdpkm8RUS).
