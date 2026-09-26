@@ -188,14 +188,11 @@ The example above shows the vanilla values, which are a good starting point.
 `Monuments` (`Монументы`)
 
 ### Getting the list
-1. Set `"Enabled": true` and an empty list:
-   ```json
-   "Monuments": { "Enabled": true, "MonumentList": [] }
-   ```
-2. Run a generation. The mod finds every monument group in the game (18 at the moment) and writes them to `MonumentList` with vanilla settings.
-3. Edit the groups you need. Leave the rest alone: they have `"ShouldChange": false` and behave as in vanilla.
+The mod fills `MonumentList` by itself on every run, whether `Enabled` is on or off.
+1. Run a generation once. `MonumentList` now has every monument group of the game (18 at the moment) with vanilla settings.
+2. Set `"Enabled": true` and edit the groups you need. Leave the rest alone: they have `"ShouldChange": false` and behave as in vanilla.
 
-To get a fresh list (for example, after a major Rust update), empty `MonumentList` again.
+After a Rust update, new groups are added automatically (the log says `Added N monument groups to the config`), and the groups you edited aren't touched. A group that is no longer in the game stays in the list with a warning in the log, delete it by hand. To reset a group to vanilla values, delete it from the list: it's added back on the next run.
 
 ### Groups
 Each entry is a **group** of monuments, not a single monument. A group corresponds to a prefab folder in the game.

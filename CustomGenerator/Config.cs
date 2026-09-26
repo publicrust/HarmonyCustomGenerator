@@ -294,7 +294,6 @@ namespace CustomGenerator
             public uint mapsize = 0;
             public uint mapseed = 0;
             public bool mapGenerated = false;
-            public bool shouldGetMonuments = false;
             public TerrainTexturing terrainTexturing;
             public TerrainMeta terrainMeta;
             public TerrainPath terrainPath;
@@ -326,10 +325,7 @@ namespace CustomGenerator
 
             try {
                 string raw = File.ReadAllText(Location);
-                string language = JObject.Parse(raw).Value<string>("Language (en/ru)") ?? DetectLanguage();
-
-                // Keys in either language are accepted, missing keys keep their defaults
-                Config = JsonConvert.DeserializeObject<ConfigData>(raw, SerializerSettings(language));
+                Config = Deserialize(raw);
 
                 if (Config.Version != CurrentVersion) {
                     string backupPath = Location + $".{Config.Version}.backup";
@@ -350,9 +346,12 @@ namespace CustomGenerator
             }
 
             Validate();
+        }
 
-            if (Config.Monuments.monuments.IsNullOrEmpty())
-                tempData.shouldGetMonuments = true;
+        // Keys in either language are accepted, missing keys keep their defaults
+        private static ConfigData Deserialize(string raw) {
+            string language = JObject.Parse(raw).Value<string>("Language (en/ru)") ?? DetectLanguage();
+            return JsonConvert.DeserializeObject<ConfigData>(raw, SerializerSettings(language));
         }
 
         private static void LoadDefaultConfig() {
@@ -368,23 +367,58 @@ namespace CustomGenerator
             }
         }
 
-        public static void SaveConfig() {
+        public static void SaveConfig() => SaveConfig(Config);
+
+        private static void SaveConfig(ConfigData data) {
             try
             {
-                File.WriteAllText(Location, JsonConvert.SerializeObject(Config, SerializerSettings(Config.Language)));
+                File.WriteAllText(Location, JsonConvert.SerializeObject(data, SerializerSettings(data.Language)));
                 Logging.Config("Configuration saved successfully");
             }
             catch (Exception ex)
             {
                 Logging.Error("Failed to save configuration", ex);
             }
-            SaveSchema();
+            SaveSchema(data);
+        }
+
+        // Adds the monument groups of this Rust version that the config doesn't have yet: all of them on the first run,
+        // new ones after a game update. Existing groups keep their settings, the list follows the game's order.
+        public static void MergeMonumentGroups(List<Monument> found) {
+            var added = MergeGroups(Config.Monuments.monuments, found, out var missing);
+            foreach (var group in missing)
+                Logging.Warning($"Monument group '{group.Description}' ({group.Folder}) is not in this Rust version, kept in the config but has no effect");
+            if (added.Count == 0) return;
+            Logging.Config($"Added {added.Count} monument groups to the config: {string.Join(", ", added.Select(x => x.Description))}");
+
+            // Merge into the file as the user wrote it, so runtime fixes from Validate don't end up in it
+            ConfigData file;
+            try { file = Deserialize(File.ReadAllText(Location)); }
+            catch (Exception ex) { Logging.Error("Failed to re-read the config, monument groups not saved", ex); return; }
+            MergeGroups(file.Monuments.monuments, found.Select(x => JsonConvert.DeserializeObject<Monument>(JsonConvert.SerializeObject(x))).ToList(), out _);
+            SaveConfig(file);
+        }
+
+        private static List<Monument> MergeGroups(List<Monument> list, List<Monument> found, out List<Monument> missing) {
+            // Match by Folder, each config entry is used once (the game may have several groups with one folder)
+            missing = new List<Monument>(list);
+            var added = new List<Monument>();
+            var result = new List<Monument>();
+            foreach (var group in found) {
+                var existing = missing.FirstOrDefault(x => x.Folder == group.Folder);
+                if (existing != null) { missing.Remove(existing); result.Add(existing); }
+                else { added.Add(group); result.Add(group); }
+            }
+            result.AddRange(missing);
+            list.Clear();
+            list.AddRange(result);
+            return added;
         }
 
         // Regenerated on every save, so it always matches the mod version and the config's language
-        private static void SaveSchema() {
+        private static void SaveSchema(ConfigData data) {
             try {
-                var schema = ConfigSchema.Build(typeof(ConfigData), new LocalizedContractResolver(Config.Language), Config.Language == "ru");
+                var schema = ConfigSchema.Build(typeof(ConfigData), new LocalizedContractResolver(data.Language), data.Language == "ru");
                 File.WriteAllText(SchemaLocation, schema.ToString(Formatting.Indented));
             } catch (Exception ex) {
                 Logging.Error("Failed to save config schema", ex);

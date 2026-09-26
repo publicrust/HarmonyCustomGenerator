@@ -149,12 +149,12 @@ namespace CustomGenerator.Generators
         private static MethodBase TargetMethod() { return AccessTools.Method(typeof(WorldSetup), nameof(WorldSetup.InitCoroutine)); }
         private static FieldInfo _monuments = AccessTools.TypeByName("PlaceMonuments").GetField("Monuments", BindingFlags.NonPublic);
         private static bool Prefix(WorldSetup __instance) {
-            if (!tempData.shouldGetMonuments || !Config.Monuments.Enabled) return true;
+            // Runs every time (even with Monuments disabled), so the list is ready to edit after the first run
             PlaceMonuments[] placeMonuments = SingletonComponent<WorldSetup>.Instance.GetComponentsInChildren<ProceduralComponent>(true).OfType<PlaceMonuments>().ToArray();
-            Logging.Info($"Founded {placeMonuments.Length} PlaceMonuments.");
-            Config.Monuments.monuments.Clear();
+            Logging.Info($"Found {placeMonuments.Length} monument groups.");
+            var found = new List<ExtConfig.Monument>();
             foreach (var mon in placeMonuments) {
-                Config.Monuments.monuments.Add(new ExtConfig.Monument { 
+                found.Add(new ExtConfig.Monument { 
                     Description = mon.Description, 
                     Folder = mon.ResourceFolder, 
                     distanceDifferent = mon.DistanceDifferentType, 
@@ -175,7 +175,7 @@ namespace CustomGenerator.Generators
                     Generate = true, ShouldChange = false,
                 });
             }
-            SaveConfig();
+            MergeMonumentGroups(found);
 
             return true;
         }
