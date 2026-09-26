@@ -10,9 +10,10 @@ How to install the mod, set up the config and swap monuments.
 5. [Map Settings](#map-settings)
 6. [Main Generator](#main-generator)
 7. [Monuments](#monuments)
-8. [Monument swap](#monument-swap)
-9. [Recipes](#recipes)
-10. [Troubleshooting](#troubleshooting)
+8. [Custom monuments](#custom-monuments)
+9. [Monument swap](#monument-swap)
+10. [Recipes](#recipes)
+11. [Troubleshooting](#troubleshooting)
 
 ---
 
@@ -197,7 +198,7 @@ After a Rust update, new groups are added automatically (the log says `Added N m
 ### Groups
 Each entry is a **group** of monuments, not a single monument. A group corresponds to a prefab folder in the game.
 
-> ⚠️ These "folders" live **inside the game's asset bundles** (`Bundles/`), not on disk. The full path looks like `assets/bundled/prefabs/autospawn/<Folder>/`, for example `assets/bundled/prefabs/autospawn/monument/harbor/harbor_1.prefab`. There's no such folder in the server directory: you can't open it or put your own prefabs in it. `Folder` and `OverrideFolder` are paths inside the bundles. The only way to add your own monuments is the [swap](#monument-swap).
+> ⚠️ These "folders" live **inside the game's asset bundles** (`Bundles/`), not on disk. The full path looks like `assets/bundled/prefabs/autospawn/<Folder>/`, for example `assets/bundled/prefabs/autospawn/monument/harbor/harbor_1.prefab`. There's no such folder in the server directory: you can't open it or put your own prefabs in it. `Folder` and `OverrideFolder` are paths inside the bundles. Your own monuments are added with [custom monuments](#custom-monuments) or the [swap](#monument-swap).
 
 | `Folder` | `Description` | What it is |
 |---|---|---|
@@ -317,6 +318,106 @@ How it works:
   To see the names in a group, give it any rule (for example, `"ExcludePrefabs": ["nothing"]`) and run a generation.
 
 > Groups are placed one after another. If you greatly increase one group (for example, harbors), later groups may run out of room and some main monuments may disappear. Lower the distances or use a bigger map.
+
+---
+
+## Custom monuments
+
+`Custom Monuments` (`Кастомные Монументы`)
+
+Adds your own monuments made in RustEdit to the map as **new** monuments, together with their terrain. The mod finds free spots for them during generation. Nothing vanilla is replaced: to put your monument in place of a vanilla one, use the [swap](#monument-swap).
+
+| | Custom monuments | Swap |
+|---|---|---|
+| Where | New spots chosen by the mod | Exactly where a vanilla monument stood |
+| Terrain | Heights, textures, topology and holes from your file | Unchanged |
+| Roads and rails | Built around the monument (it's placed before them) | Were built for the original |
+| When | During generation | After the map is saved |
+
+### Settings
+
+```json
+"Custom Monuments": {
+  "Enabled": true,
+  "Folder with .map files (relative to server root)": "maps/custom",
+  "List": [
+    {
+      "Enabled": true,
+      "Name": "Gas station",
+      "File": "gas_station.prefab",
+      "Count": 2,
+      "Radius": 0,
+      "Blend": 25,
+      "HeightMode": "Stamp",
+      "CopySplat": true,
+      "CopyTopology": false,
+      "CopyAlpha": true,
+      "RandomRotation": true,
+      "MaxHeightDifference": 15,
+      "MinHeight": 2,
+      "MaxHeight": 150,
+      "MinDistanceToMonuments": 150,
+      "MinDistanceSameType": 500,
+      "Filter": { "Enabled": false }
+    }
+  ]
+}
+```
+
+`Enabled` turns the whole section on, the folder is where your files are (`maps/custom` by default). Each `List` entry is one monument file.
+
+### Preparing the file
+
+Two formats are supported. Put the file in the folder and write its name in `File`.
+
+**`.map`**: a regular RustEdit map with your monument on it.
+- The **first prefab** in the hierarchy is the anchor, the monument's center. Put a SpawnPoint there (or the original monument prefab), as for the [swap](#step-1-build-the-monument-in-rustedit). A SpawnPoint anchor isn't placed on the map. A `.map` made for the swap works here too.
+- Prefab positions are taken relative to the anchor, heights relative to the ground under the anchor.
+- The terrain (heights, textures, topology, holes) is read from the map around the anchor, so shape the terrain right there.
+
+**`.prefab`**: RustEdit's "Save as prefab".
+- The pivot (0, 0, 0) is the center, `y = 0` is ground level.
+- If RustEdit saved the terrain next to the prefab (`<name>.prefab.heights`, `.splat0`, `.splat1`, `.alpha`, `.topology`), keep those files next to the `.prefab` and they are used. Without them only the prefabs are placed, and `Stamp` works like `Flatten`.
+
+Prefabs that don't exist in the current Rust version and prefabs with broken coordinates (NaN) are skipped with a warning in the log.
+
+### Fields
+
+| Field | Default | Description |
+|---|---|---|
+| `Enabled` | `true` | Place this monument. A missing file turns it off with a warning |
+| `Name` | `""` | Name for the log and the map preview. Empty means the file name |
+| `File` | `""` | File name in the custom monuments folder |
+| `Count` | `1` | How many copies to place. You may get fewer if there's no room |
+| `Radius` | `0` | Footprint radius (m). `0` means auto: the farthest prefab + 10 m, at least 20 m |
+| `Blend` | `25` | Width (m) of the ring around the footprint where the monument's terrain smoothly blends into the world |
+| `HeightMode` | `Stamp` | `Stamp`: heights from the file. `Flatten`: a flat pad. `None`: keep the world terrain |
+| `CopySplat` | `false` | Copy ground textures from the file |
+| `CopyTopology` | `false` | Copy topology from the file (tiers are kept from the world) |
+| `CopyAlpha` | `true` | Copy terrain holes, e.g. bunker entrances |
+| `RandomRotation` | `true` | Rotate each copy randomly around the vertical axis |
+| `MaxHeightDifference` | `15` | Max height difference (m) of the world terrain under the footprint |
+| `MinHeight` / `MaxHeight` | `2` / `150` | Allowed terrain height (m above sea level) at the center |
+| `MinDistanceToMonuments` | `150` | Min distance (m) to other monuments |
+| `MinDistanceSameType` | `500` | Min distance (m) between copies of this monument |
+| `Filter` | off | Where the monument may stand, same as the [group filter](#group-fields) |
+
+### How placement works
+1. Custom monuments are placed right after the vanilla main monuments, **before roads and rails**. The footprint gets the `Monument` topology, so roads, rails, cliffs and decor keep away.
+2. The mod tries random spots and picks the flattest of the first 16 suitable ones. Spots depend on the seed: the same seed gives the same result.
+3. A spot is suitable when:
+   - the terrain height at the center is between `MinHeight` and `MaxHeight`, and the `Filter` allows the center (`TopologyNot` is checked over the whole footprint);
+   - the footprint is on land, with no ocean, river, lake, road, rail or other monument, and the `Blend` ring doesn't touch the ocean, a river or a monument;
+   - the height difference under the footprint is at most `MaxHeightDifference`;
+   - it's at least `MinDistanceToMonuments` + `Radius` from vanilla monuments, and doesn't overlap other custom monuments (`MinDistanceSameType` between copies of one entry).
+4. The terrain inside `Radius` is set by `HeightMode` around the average height of the footprint and blended into the world within `Blend`.
+5. Entries are processed in list order, so earlier ones get the better spots.
+
+The log shows every placed copy and a summary:
+```
+Custom monument 'Gas station' #1: 312, -845 (height 24.3, rotation 117)
+Custom monument 'Gas station': placed 2/2, radius 46m, 118 prefabs each
+```
 
 ---
 
@@ -445,6 +546,8 @@ They work together. For example, make 3 harbors with `PrefabCopies` and replace 
 | I don't know a prefab name | Give the group any rule and look for the `available:` line in the log |
 | The swap didn't work | Is the file in `maps/prefabs/`? Is it named `<prefab>.prefab.map`? Is `Swap Monuments → Enabled` set to `true`? Any `Swap:` errors in the log? |
 | A swapped monument is shifted, rotated or underground | Is the original or the SpawnPoint first in the hierarchy? Is it unrotated? Does the SpawnPoint match the original's center, height included? |
+| A custom monument wasn't placed | Look for `no suitable spot found` in the log: lower the distances, raise `MaxHeightDifference`, widen `MinHeight`–`MaxHeight`, loosen `Filter`, use a bigger map. File errors are logged too |
+| A custom monument floats or is buried | `.map`: is the anchor (first prefab) on the ground? `.prefab`: is `y = 0` the ground level? Try `"HeightMode": "Flatten"` |
 | The preview shows the old monuments | Expected: the preview is rendered before the swap. Check the result in RustEdit |
 | No preview or a font error | No internet access: copy the fonts from the repository's `Resources/` folder to `mapimages/resources/` |
 | A map above 6000 looks broken | The Rust client doesn't support such sizes, stay at 6000 or below |
