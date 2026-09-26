@@ -484,9 +484,11 @@ The swap replaces vanilla monuments on the map with your own versions from `.map
 ### How the swap works
 The swap runs **after** generation, once the map is saved:
 1. The mod opens the saved map `maps/<name>.map`.
-2. For every file `maps/prefabs/<name>.map` it looks for monuments whose path contains `<name>`.
+2. For every file `maps/prefabs/<name>.map` it looks for monuments whose path contains `<name>` (case-insensitive).
 3. It removes each match and places every prefab from your file in its spot: position and rotation come from the original, and the other prefabs are placed relative to the first object in your file.
 4. It saves the result (see `Save both maps`).
+
+The log and the [report](#generation-report) show what was replaced, for example `Swap: harbor_1.prefab.map: replaced 1 x 'harbor_1.prefab'`. A file that matches nothing on the map gives a warning.
 
 What is **not** transferred:
 - terrain, textures and topology from your `.map`. Only **prefabs** are taken, the ground under the monument stays vanilla;
