@@ -41,7 +41,7 @@ namespace CustomGenerator.Patches {
                 else Logging.Error($"Swap: saved map not found at {path}, swap skipped");
             }
 
-            MapImage.RenderMap(0.75f, 150);
+            MapImage.RenderMap();
             GenerationReport.Write(Path.Combine(World.MapFolderName, World.MapFileName));
             
             //Rust.Application.Quit();

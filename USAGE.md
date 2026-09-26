@@ -8,12 +8,13 @@ How to install the mod, set up the config and swap monuments.
 3. [First run and generation](#first-run-and-generation)
 4. [Config basics](#config-basics)
 5. [Map Settings](#map-settings)
-6. [Main Generator](#main-generator)
-7. [Monuments](#monuments)
-8. [Custom monuments](#custom-monuments)
-9. [Monument swap](#monument-swap)
-10. [Recipes](#recipes)
-11. [Troubleshooting](#troubleshooting)
+6. [Map image](#map-image)
+7. [Main Generator](#main-generator)
+8. [Monuments](#monuments)
+9. [Custom monuments](#custom-monuments)
+10. [Monument swap](#monument-swap)
+11. [Recipes](#recipes)
+12. [Troubleshooting](#troubleshooting)
 
 ---
 
@@ -151,6 +152,30 @@ The mod reads and re-saves the config on every run, so the file formatting may c
 > ⚠️ Don't generate maps **larger than 6000**. The Rust client doesn't support them: it shows a 6000 map with monuments and prefabs floating in the air.
 
 Only `{0}` and `{1}` are allowed in the map name. If you use something like `{2}`, the mod falls back to the default template and logs a warning.
+
+---
+
+## Map image
+
+`Map Image` (`Превью Карты`)
+
+```json
+"Map Image": {
+  "Enabled": true,
+  "Scale (pixels per meter)": 0.75,
+  "Ocean margin (pixels)": 350,
+  "Draw grid": true,
+  "Draw monument names": true
+}
+```
+
+| Key | Default | Description |
+|---|---|---|
+| `Enabled` (`Включить`) | `true` | Render the preview to `mapimages/<map name>.png`. `false` skips it and saves about a minute per run |
+| `Scale (pixels per meter)` | `0.75` | Image size: 0.75 on a 4000 map gives 3000 px plus the margins. From 0.1 to 4 |
+| `Ocean margin (pixels)` | `350` | Ocean around the map on each side |
+| `Draw grid` | `true` | The map grid, as in the game |
+| `Draw monument names` | `true` | Monument names, custom monuments included |
 
 ---
 

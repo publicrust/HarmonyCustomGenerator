@@ -35,6 +35,9 @@ namespace CustomGenerator
             [Loc("Map Settings", "Настройки Карты")]
             public MapSettings mapSettings = new();
 
+            [Loc("Map Image", "Превью Карты")]
+            public MapImageSettings MapImage = new();
+
             [Loc("Main Generator", "Основной Генератор")]
             public GeneratorSettings Generator = new();
 
@@ -62,6 +65,23 @@ namespace CustomGenerator
             public bool OverrideName = true;
             [Loc("Map Name ({0} - size, {1} - seed)", "Название карты ({0} - размер, {1} - сид)")]
             public string MapName = "CustomGenerator{0}_{1}";
+        }
+
+        public sealed class MapImageSettings {
+            [Loc("Enabled", "Включить")]
+            public bool Enabled = true;
+            [Loc("Scale (pixels per meter)", "Масштаб (пикселей на метр)")]
+            [Desc("0.75 on a 4000 map gives a 3000 px map plus the ocean margin", "0.75 на карте 4000 даёт 3000 px карты плюс отступ океана")]
+            [Schema(Min = 0.1, Max = 4)]
+            public float Scale = 0.75f;
+            [Loc("Ocean margin (pixels)", "Отступ океана (пиксели)")]
+            [Desc("Ocean around the map on each side", "Океан вокруг карты с каждой стороны")]
+            [Schema(Min = 0)]
+            public int OceanMargin = 350;
+            [Loc("Draw grid", "Рисовать сетку")]
+            public bool Grid = true;
+            [Loc("Draw monument names", "Подписывать монументы")]
+            public bool MonumentNames = true;
         }
 
         public sealed class GeneratorSettings {
@@ -437,6 +457,16 @@ namespace CustomGenerator
             catch (FormatException) {
                 Logging.Warning($"Map name '{Config.mapSettings.MapName}' has invalid placeholders (only {{0}} and {{1}} allowed), using default");
                 Config.mapSettings.MapName = new MapSettings().MapName;
+            }
+
+            var image = Config.MapImage ??= new MapImageSettings();
+            if (image.Scale < 0.1f || image.Scale > 4f) {
+                Logging.Warning($"Map image scale must be 0.1-4 (got {image.Scale}), using {Mathf.Clamp(image.Scale, 0.1f, 4f)}");
+                image.Scale = Mathf.Clamp(image.Scale, 0.1f, 4f);
+            }
+            if (image.OceanMargin < 0) {
+                Logging.Warning($"Map image ocean margin must be >= 0 (got {image.OceanMargin}), using 0");
+                image.OceanMargin = 0;
             }
 
             if (gen.RiverWidthScale <= 0f) {

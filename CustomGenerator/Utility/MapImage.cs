@@ -46,10 +46,12 @@ namespace CustomGenerator.Utility {
                 }
             }
         }
-        public static void RenderMap(float scale = 0.5f, int oceanMargin = 500) {
+        public static void RenderMap() {
+            var settings = Config.MapImage;
+            if (!settings.Enabled) { Logging.Info("Map image disabled in the config"); return; }
             CheckResources();
 
-            byte[] array = MapImageRender.Render(out int num, out int num2, out Color color, scale, false, false, 350);
+            byte[] array = MapImageRender.Render(out int num, out int num2, out Color color, settings.Scale, false, false, settings.OceanMargin);
             if (array == null) {
                 Logging.Error("MapImageGenerator returned null!"); return;
             }
@@ -226,7 +228,7 @@ namespace CustomGenerator.Utility {
             background = output[0, 0];
 
             LoadIcons(ref output, imageWidth, imageHeight, mapRes, oceanMargin);
-            RenderGrid(ref output, mapRes, imageWidth, oceanMargin);
+            if (Config.MapImage.Grid) RenderGrid(ref output, mapRes, imageWidth, oceanMargin);
 
             Logging.Info($"  - Render took {stopwatch.Elapsed.Seconds}s.");
             Logging.Info("6/6 | Done! Encoding...");
@@ -272,7 +274,7 @@ namespace CustomGenerator.Utility {
                 mapMonuments.Add(new MapMonument { name = custom.Key, x = x, y = z, indication = Indication.Regular });
             }
 
-            RenderMonument(mapMonuments, PermanentMarkerFont, ref output);
+            if (Config.MapImage.MonumentNames) RenderMonument(mapMonuments, PermanentMarkerFont, ref output);
             RenderGithub(DinProFontBold, ref output, mapResolution, imageWidth);
         }
 

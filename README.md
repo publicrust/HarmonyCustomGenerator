@@ -54,6 +54,7 @@ For help, report issue and etc. join [our discord](https://discord.gg/xUdpkm8RUS
 - [x] Generate splat/height map
 - [x] Generate monument names
 - [x] Generate map grid
+- [x] Configurable scale, ocean margin, grid and names (or turn the preview off)
 
 6. Additional Features
 - [x] Custom Monuments
