@@ -22,7 +22,7 @@ public class SwapMonument {
 
         if (!Config.Swap.SaveBothMaps)
             _mainMap.Save(mapPath);
-        else _mainMap.Save(mapPath.Replace(".map", ".swapped.map"));
+        else _mainMap.Save(Path.ChangeExtension(mapPath, ".swapped.map"));
     }
 
     private static void SwapMonuments() {

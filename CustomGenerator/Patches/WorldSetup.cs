@@ -35,8 +35,10 @@ namespace CustomGenerator.Patches {
             Logging.Info($"SIZE: {tempData.mapsize} | SEED: {tempData.mapseed}");
 
             if (Config.Swap.Enabled) {
-                string path = Path.GetFullPath("maps") + "\\" + string.Format(Config.mapSettings.MapName, tempData.mapsize, tempData.mapseed) + (!Config.mapSettings.MapName.EndsWith(".map") ? ".map" : "");
-                SwapMonument.Initiate(path);
+                // Same getters the game saved the map with, so the path is right with Override Folder/Name on or off
+                string path = Path.Combine(World.MapFolderName, World.MapFileName);
+                if (File.Exists(path)) SwapMonument.Initiate(path);
+                else Logging.Error($"Swap: saved map not found at {path}, swap skipped");
             }
 
             MapImage.RenderMap(0.75f, 150);

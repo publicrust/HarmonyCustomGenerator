@@ -54,11 +54,12 @@ namespace CustomGenerator.Utility {
                 Logging.Error("MapImageGenerator returned null!"); return;
             }
 
-            string mapName = string.Format(Config.mapSettings.MapName, tempData.mapsize, tempData.mapseed).Replace(".map", "");
+            // Named after the saved map, whatever Override Name/Folder are
+            string mapName = Path.GetFileNameWithoutExtension(World.MapFileName);
             string fullPath = Path.GetFullPath(Path.Combine(Environment.CurrentDirectory, $"mapimages/{mapName}.png"));
             File.WriteAllBytes(fullPath, array);
-            Logging.Info("Generated Map image: /mapimages/");
-            Logging.Info(string.Format("Map saved to {0}", Config.mapSettings.OverrideFolder ? "/maps/" : "original map folder"));
+            Logging.Info($"Generated Map image: {fullPath}");
+            Logging.Info($"Map saved to {Path.GetFullPath(Path.Combine(World.MapFolderName, World.MapFileName))}");
         }
     }
 

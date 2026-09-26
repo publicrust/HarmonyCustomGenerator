@@ -109,8 +109,6 @@ The mod reads and re-saves the config on every run, so the file formatting may c
 
 > ⚠️ Don't generate maps **larger than 6000**. The Rust client doesn't support them: it shows a 6000 map with monuments and prefabs floating in the air.
 
-> Swapping requires both `Override Map Folder` and `Override Map Name`: the swap looks for the map in `maps/` using this template.
-
 Only `{0}` and `{1}` are allowed in the map name. If you use something like `{2}`, the mod falls back to the default template and logs a warning.
 
 ---
@@ -345,8 +343,6 @@ The swap replaces vanilla monuments on the map with your own versions from `.map
 | `Enabled` (`Включить`) | Enable the swap |
 | `Save both maps (with swap and without)` (`Сохранить обе карты (с заменой и без)`) | `true` keeps the original as `<name>.map` and saves the swapped version as `<name>.swapped.map`. `false` **overwrites** the original with the swapped version |
 
-`Override Map Folder` and `Override Map Name` must also be enabled (see [Map Settings](#map-settings)).
-
 ### How the swap works
 The swap runs **after** generation, once the map is saved:
 1. The mod opens the saved map `maps/<name>.map`.
@@ -450,7 +446,7 @@ They work together. For example, make 3 harbors with `PrefabCopies` and replace 
 | Fewer monuments than `TargetCount` | Not enough room: lower `MinDistance*`, loosen `Filter`, use a bigger map. Duplicates need `PrefabCopies` |
 | Other monuments disappeared | One group took their space. Shrink it or lower the distances |
 | I don't know a prefab name | Give the group any rule and look for the `available:` line in the log |
-| The swap didn't work | Is the file in `maps/prefabs/`? Is it named `<prefab>.prefab.map`? Is `Swap Monuments → Enabled` set to `true`? Are `Override Map Folder` and `Override Map Name` enabled? |
+| The swap didn't work | Is the file in `maps/prefabs/`? Is it named `<prefab>.prefab.map`? Is `Swap Monuments → Enabled` set to `true`? Any `Swap:` errors in the log? |
 | A swapped monument is shifted, rotated or underground | Is the original or the SpawnPoint first in the hierarchy? Is it unrotated? Does the SpawnPoint match the original's center, height included? |
 | The preview shows the old monuments | Expected: the preview is rendered before the swap. Check the result in RustEdit |
 | No preview or a font error | No internet access: copy the fonts from the repository's `Resources/` folder to `mapimages/resources/` |
