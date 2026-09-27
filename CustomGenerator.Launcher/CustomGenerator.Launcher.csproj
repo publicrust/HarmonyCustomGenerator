@@ -1,0 +1,52 @@
+<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="15.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <Import Project="$(MSBuildExtensionsPath)\$(MSBuildToolsVersion)\Microsoft.Common.props" Condition="Exists('$(MSBuildExtensionsPath)\$(MSBuildToolsVersion)\Microsoft.Common.props')" />
+  <PropertyGroup>
+    <Configuration Condition=" '$(Configuration)' == '' ">Debug</Configuration>
+    <Platform Condition=" '$(Platform)' == '' ">AnyCPU</Platform>
+    <ProjectGuid>{6C1B7E0E-3F4B-4D7A-9E2B-5A8C2D1F9B31}</ProjectGuid>
+    <OutputType>Exe</OutputType>
+    <RootNamespace>CustomGenerator.Launcher</RootNamespace>
+    <AssemblyName>CustomGeneratorLauncher</AssemblyName>
+    <TargetFrameworkVersion>v4.8</TargetFrameworkVersion>
+    <FileAlignment>512</FileAlignment>
+    <Deterministic>true</Deterministic>
+    <LangVersion>10.0</LangVersion>
+    <RustServerDir Condition=" '$(RustServerDir)' == '' ">C:\server\zazarust\steamcmd\steamapps\common\rust_dedicated\</RustServerDir>
+  </PropertyGroup>
+  <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Debug|AnyCPU' ">
+    <DebugSymbols>true</DebugSymbols>
+    <DebugType>full</DebugType>
+    <Optimize>false</Optimize>
+    <OutputPath>bin\Debug\</OutputPath>
+    <DefineConstants>DEBUG;TRACE</DefineConstants>
+  </PropertyGroup>
+  <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Release|AnyCPU' ">
+    <DebugType>pdbonly</DebugType>
+    <Optimize>true</Optimize>
+    <OutputPath>bin\Release\</OutputPath>
+    <DefineConstants>TRACE</DefineConstants>
+  </PropertyGroup>
+  <ItemGroup>
+    <Compile Include="Generator.cs" />
+    <Compile Include="Http.cs" />
+    <Compile Include="Program.cs" />
+  </ItemGroup>
+  <ItemGroup>
+    <EmbeddedResource Include="..\CustomGenerator\Editor\ConfigEditor.html">
+      <Link>ConfigEditor.html</Link>
+      <LogicalName>ConfigEditor.html</LogicalName>
+    </EmbeddedResource>
+  </ItemGroup>
+  <ItemGroup>
+    <Reference Include="System" />
+    <Reference Include="System.Core" />
+    <Reference Include="System.Web.Extensions" />
+  </ItemGroup>
+  <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
+  <!-- Same as the mod: a Release build lands in the local test server, next to RustDedicated.exe.
+       Only a warning when the launcher there is running and the file is locked. -->
+  <Target Name="CopyToServer" AfterTargets="Build" Condition=" '$(Configuration)' == 'Release' And Exists('$(RustServerDir)') ">
+    <Copy SourceFiles="$(TargetPath)" DestinationFolder="$(RustServerDir)" Retries="0" ContinueOnError="WarnAndContinue" />
+  </Target>
+</Project>

@@ -35,11 +35,14 @@ namespace CustomGenerator.Patches {
             Logging.Info($"SIZE: {tempData.mapsize} | SEED: {tempData.mapseed}");
 
             if (Config.Swap.Enabled) {
-                string path = Path.GetFullPath("maps") + "\\" + string.Format(Config.mapSettings.MapName, tempData.mapsize, tempData.mapseed) + (!Config.mapSettings.MapName.EndsWith(".map") ? ".map" : "");
-                SwapMonument.Initiate(path);
+                // Same getters the game saved the map with, so the path is right with Override Folder/Name on or off
+                string path = Path.Combine(World.MapFolderName, World.MapFileName);
+                if (File.Exists(path)) SwapMonument.Initiate(path);
+                else Logging.Error($"Swap: saved map not found at {path}, swap skipped");
             }
 
-            MapImage.RenderMap(0.75f, 150);
+            MapImage.RenderMap();
+            GenerationReport.Write(Path.Combine(World.MapFolderName, World.MapFileName));
             
             //Rust.Application.Quit();
             Application.Quit();
@@ -58,31 +61,37 @@ namespace CustomGenerator.Patches {
                 World.Config.Rivers = false;
                 Logging.Generation("Rivers disabled");
             }
+            if (Config.Generator.RemovePowerlines) {
+                World.Config.Powerlines = false;
+                Logging.Generation("Powerlines disabled");
+            }
+            if (Config.Generator.RemoveTunnels) {
+                World.Config.BelowGroundRails = false;
+                Logging.Generation("Underground tunnels disabled");
+            }
             LoadPercentages();
-            Logging.Generation($"Changing tier percentages...");
         }
 
+        // Values are validated in ExtConfig.Validate: non-negative, sums > 0
         private static void LoadPercentages() {
             if (!Config.Generator.ModifyPercentages) return;
+            var tier = Config.Generator.Tier;
+            var biom = Config.Generator.Biom;
 
-            float sum1 = Config.Generator.Tier.Tier0 + Config.Generator.Tier.Tier1 + Config.Generator.Tier.Tier2;
-            float sum2 = Config.Generator.Biom.Arid + Config.Generator.Biom.Arctic + Config.Generator.Biom.Temperate + Config.Generator.Biom.Tundra + Config.Generator.Biom.Jungle;
+            float tiers = tier.Tier0 + tier.Tier1 + tier.Tier2;
+            World.Config.PercentageTier0 = tier.Tier0 / tiers;
+            World.Config.PercentageTier1 = tier.Tier1 / tiers;
+            World.Config.PercentageTier2 = tier.Tier2 / tiers;
 
-            World.Config.PercentageTier0 = sum1 >= 100f ? Config.Generator.Tier.Tier0 / sum1 : Config.Generator.Tier.Tier0;
-            World.Config.PercentageTier1 = sum1 >= 100f ? Config.Generator.Tier.Tier1 / sum1 : Config.Generator.Tier.Tier1;
-            World.Config.PercentageTier2 = sum1 >= 100f ? Config.Generator.Tier.Tier2 / sum1 : Config.Generator.Tier.Tier2;
+            // Jungle is not part of the biome split (vanilla: 0.4 + 0.15 + 0.15 + 0.3 = 1, jungle 0.5)
+            float biomes = biom.Arid + biom.Temperate + biom.Tundra + biom.Arctic;
+            World.Config.PercentageBiomeArid = biom.Arid / biomes;
+            World.Config.PercentageBiomeTemperate = biom.Temperate / biomes;
+            World.Config.PercentageBiomeTundra = biom.Tundra / biomes;
+            World.Config.PercentageBiomeArctic = biom.Arctic / biomes;
+            World.Config.PercentageBiomeJungle = biom.Jungle / 100f;
 
-            if (sum1 < 100f)
-                Logging.Error("Tier perc. summs lower than 100! Set default.");
-
-            World.Config.PercentageBiomeArid = sum2 >= 100f ? Config.Generator.Biom.Arid / sum2 : Config.Generator.Biom.DefaultArid;
-            World.Config.PercentageBiomeArctic = sum2 >= 100f ? Config.Generator.Biom.Arctic / sum2 : Config.Generator.Biom.DefaultArctic;
-            World.Config.PercentageBiomeTemperate = sum2 >= 100f ? Config.Generator.Biom.Temperate / sum2 : Config.Generator.Biom.DefaultTemperate;
-            World.Config.PercentageBiomeTundra = sum2 >= 100f ? Config.Generator.Biom.Tundra / sum2 : Config.Generator.Biom.DefaultTundra;
-            World.Config.PercentageBiomeJungle = sum2 >= 100f ? Config.Generator.Biom.Jungle / sum2 : Config.Generator.Biom.DefaultJungle;
-
-            if (sum2 < 100f)
-                Logging.Error("Biom perc. summs lower than 100! Set default.");
+            Logging.Generation($"Tier and biome percentages changed");
         }
     }
 }

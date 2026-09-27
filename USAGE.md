@@ -1,47 +1,644 @@
-# Custom Rust Map Generator Usage Guide
+# Custom Rust Map Generator Guide
 
-## Table of Contents
-1. [Installation](#installation)
-2. [Map Generation](#map-generation)
-3. [Monument Swapping](#monument-swapping)
+How to install the mod, set up the config and swap monuments.
+
+## Contents
+1. [How it works](#how-it-works)
+2. [Installation](#installation)
+3. [First run and generation](#first-run-and-generation)
+4. [Config basics](#config-basics)
+5. [Map Settings](#map-settings)
+6. [Map image](#map-image)
+7. [Main Generator](#main-generator)
+8. [Monuments](#monuments)
+9. [Custom monuments](#custom-monuments)
+10. [Monument swap](#monument-swap)
+11. [Recipes](#recipes)
+12. [Troubleshooting](#troubleshooting)
+
+---
+
+## How it works
+
+The mod hooks into the vanilla Rust map generator through Harmony and changes its parameters on the fly. The map stays procedural, but you control roads, rivers, monuments, biomes and more.
+
+> ⚠️ **The mod is for map generation only.** Once the map is generated and saved, the mod renders a preview image and **shuts the server down**. Don't leave `CustomGenerator.dll` in `HarmonyMods` on a live server: the server will generate a map and exit, and an auto-restart script will loop forever.
+>
+> The usual workflow: generate a `.map` on a separate server copy, then put it on your live server with `server.levelurl` or a local `server.level`.
+
+---
 
 ## Installation
 
-1. Make sure your server have Harmony 2.3 installed (default installed)
-2. Copy the generator dll file to the `HarmonyMods/CustomGenerator.dll`
-3. Configure settings in `HarmonyConfig/CustomGeneratorCFG.json`
+1. You need a Rust Dedicated Server. Harmony 2.3 is already included.
+2. Download `CustomGenerator-<version>.zip` from [Releases](https://github.com/publicrust/HarmonyCustomGenerator/releases) and unpack it into the server folder, next to `RustDedicated.exe`. It contains `HarmonyMods/CustomGenerator.dll`, the [launcher](#config-editor) `CustomGeneratorLauncher.exe` and the preview fonts in `mapimages/resources/`.
+3. That's it. The config is created on the first run.
 
-Logs will be available in `HarmonyConfig/logs`  
-Generated map images in `mapimages/`
+Where things are (all paths are relative to the server folder that contains `RustDedicated.exe`):
 
+| Path | Contents |
+|---|---|
+| `HarmonyMods/CustomGenerator.dll` | The mod |
+| `CustomGeneratorLauncher.exe` | [Config editor](#config-editor) with map generation from the browser |
+| `HarmonyConfig/CustomGenerator.json` | Config |
+| `HarmonyConfig/CustomGenerator.schema.json` | Config schema for editor hints (regenerated, don't edit) |
+| `HarmonyConfig/CustomGenerator.editor.html` | [Config editor](#config-editor): open it in a browser (regenerated, don't edit) |
+| `HarmonyConfig/CustomGenerator.lastrun.json`, `CustomGenerator.prefabs.json` | Last run and the prefab names of each group, for the editor (regenerated) |
+| `HarmonyConfig/logs/cgen_*.log` | Mod logs, one file per run |
+| `maps/` | Generated maps (`.map`) and generation reports (`.report.txt`) |
+| `maps/prefabs/` | Your monuments for swapping |
+| `mapimages/` | Map previews (`.png`) |
+| `mapimages/resources/` | Fonts for previews (in the release archive, otherwise downloaded automatically) |
 
-## Map Generation
+---
 
-1. Run the server with the installed generator at least once
-2. Configure desired parameters in the configuration file `HarmonyConfig/CustomGeneratorCFG.json`
-3. Run the server again
-4. The generated map will be saved in the `maps/` folder or default folder with the chosen name
+## First run and generation
 
+1. Start the server with the `+server.worldsize` and `+server.seed` you want:
+   ```bat
+   RustDedicated.exe -batchmode -nographics +server.identity gen +server.worldsize 4000 +server.seed 12345 +server.level "Procedural Map"
+   ```
+2. The mod creates `HarmonyConfig/CustomGenerator.json`, generates a map with the default settings and shuts the server down.
+3. Edit the config and start the server again. Every run generates a new map.
+4. The map is saved to `maps/CustomGenerator<size>_<seed>.map`, the preview to `mapimages/`, and the [generation report](#generation-report) to `maps/CustomGenerator<size>_<seed>.report.txt`.
 
-## Monument Swapping
+A 4000 map takes about 5–10 minutes to generate, plus about a minute to render the preview.
 
-Monument Swapping allows you to replace vanilla monuments with custom ones while maintaining the original map layout and connections. This feature enables:
+> Seed and size come from the server launch parameters, not from the mod config.
 
-- Direct replacement of vanilla monuments with custom versions
-- Preservation of original monument positions and road/rail connections
-- Multiple monument replacements in a single generation
-- Automatic generation of two map versions (with and without custom monuments)
+### Generation report
+At the end of every run the mod prints a summary to the log and saves it next to the map as `<map name>.report.txt`:
 
+```
+===== CustomGenerator report =====
+Map:   C:\rust\maps\CustomGenerator2000_4242.map
+Image: C:\rust\mapimages\CustomGenerator2000_4242.png
+Size:  2000, seed 4242
+Time:  3m 46s since server start
 
-### Custom Monument Preparation
-1. Enable "Swap Monuments" => "Enabled": true
-2. Place your custom monument prefabs in the `maps/prefabs` folder
-3. Prefab requirements:
-   - File format: `.map` (see examples in the `CustomPrefabs` folder, thanks to FlySelf)
-   - Name format: `monument_original_path.prefab` (example: `fishing_village_c.prefab`)
-   - Monument size must match the original
-   - Proper terrain alignment in the prefab
+Monuments:
+  Mountains             0
+  Harbors               3  ferry_terminal_1, harbor_1, harbor_2
+  Fishing Villages      3  fishing_village_a, fishing_village_c, fishing_village_b
+  Desert Military       1  desert_military_base_c
+  Main Monuments        5  bandit_town, mining_quarry_b, sphere_tank, radtown_small_3, mining_quarry_c
+  Tunnel Entrances      1  entrance_bunker_c
+  Road Monuments        0
+  Caves                 2  cave_small_medium, cave_small_easy
+  Underwater Labs       1  underwater_lab_c
+  Lighthouses           2  lighthouse x2
 
-> Note: Make sure your custom monuments and whole map are properly tested before using them on server!
+Custom monuments:
+  Cobalt Bunker      3/3
+  Jungle Refinery    3/3
 
-For support, join our [discord server](https://discord.gg/xUdpkm8RUS).
+Swap:
+  fishing_village_c.prefab.map    1 replaced
+  gas_station_1.prefab.map        0 replaced  no such monument on the map
+  nothing_here.prefab.map         0 replaced  no such monument on the map
+  Saved to C:\rust\maps\CustomGenerator2000_4242.swapped.map
+
+Warnings: 3, errors: 0 - see C:\rust\HarmonyConfig\logs\cgen_2026-09-27_01-35-08.log
+==================================
+```
+
+- **Monuments**: what each generation step placed, with prefab names. `2/5` means 2 of the 5 set in the config; the target is shown only when it's exact (`TargetCount` with `IgnoreWorldSizeMultiplier: true`).
+- **Custom monuments** and **Swap** appear when they're enabled, with the reason when something wasn't placed or replaced.
+- **Warnings / errors**: if there are any, look them up in the log file named on that line.
+
+---
+
+## Config basics
+
+### Language
+The first field of the config:
+```json
+"Language (en/ru)": "en"
+```
+A new config uses your system language. Keys are accepted in **both** languages: change the value to `en` or `ru`, restart the server, and the file is rewritten with keys in the selected language. All values are kept.
+
+This guide uses English keys, with the Russian key in parentheses where it helps.
+
+### Config editor
+The easiest way to change settings and generate maps. There are two ways to open it:
+
+- **With the launcher (recommended):** double-click `CustomGeneratorLauncher.exe` in the server folder (it's in the release archive). It opens the editor in your browser at `http://127.0.0.1:28190/` and can **generate maps** right from the page. Keep its window open while you work.
+- **As a file:** on every run the mod writes `HarmonyConfig/CustomGenerator.editor.html`. Double-click it to edit the config offline, without generation.
+
+What's inside:
+- **Generate** (launcher only): pick sizes and seeds (🎲 for a random one, several maps in a queue), press **Save & generate** and watch the live log and the current generation step. **Stop** kills the run and clears the queue. Each map is a separate server run with its own ports (28915+), so a live server on the same machine doesn't clash. Opened as a file, this tab shows the commands to run by hand.
+- **Last run**: the map preview, size, seed, time, warnings, how many monuments of each group were placed, custom monuments, swap results and the full report.
+- **Settings sections** with descriptions and allowed values: toggles, biomes and topologies as chips, search in the monument list. A dot marks values changed from the default, `↺` puts the default back. Invalid values are marked red and can't be saved.
+- **Real names instead of typing blind:** a monument group shows the prefab names the game actually has for it (after the group has been generated once) as chips for `IncludePrefabs` / `ExcludePrefabs`, and `PrefabCopies` as `− N +` steppers. `File` of a custom monument suggests the files of the folder, and the folder's files that aren't in the list yet can be added in one click. The swap section lists `maps/prefabs` and tells whether each file matches a game prefab.
+- **Tier and biome bars:** drag the dividers, the sum stays 100.
+- **✦ Presets:** ready-made recipes (no rivers with rings, more snow, 5 harbors, no lighthouses, clean roads…). Each shows exactly what it changes before you apply it.
+- **Save** (Ctrl+S): through the launcher straight to `HarmonyConfig/CustomGenerator.json` (the previous one is kept as `.bak`). As a file, in Chrome and Edge to the file you pick, in other browsers as a download.
+
+Don't save while the server is running: the mod rewrites the config when it starts. The launcher blocks saving while it's generating. The file version shows the values from the last server run; if you edited the config by hand since then, press **Open…** and pick it.
+
+The launcher listens only on `127.0.0.1` and accepts requests only from its own page. Options: `--port <n>` (default 28190), `--root <server folder>` if it isn't next to `RustDedicated.exe`, `--no-browser`.
+
+### Editor hints
+Next to the config the mod writes `CustomGenerator.schema.json`, and the config's first line links to it (`"$schema"`). Open the config in **VS Code** (or another editor with JSON Schema support) and you get:
+- a description of every option on hover, in the config's language;
+- autocompletion of keys and allowed values (biomes, textures, topologies, `HeightMode`, `distanceSame`, etc.);
+- underlined mistakes: a misspelled biome, a negative distance, text instead of a number.
+
+The schema is rewritten on every run, so it always matches your mod version. Don't edit it and don't remove the `"$schema"` line.
+
+### Version and updates
+Don't edit the `"Version"` field. When you update the mod:
+- the old config is copied to `CustomGenerator.json.<old version>.backup`;
+- new options are added with default values, your values are kept.
+
+### When the config has an error
+- **Broken JSON** (extra comma, missing bracket): the file is saved as `CustomGenerator.json.broken-<date>` and the mod starts with the default config. Fix the copy and put it back.
+- **Invalid value** (negative percentage, unknown biome in a filter, etc.): a `[WARN]` line explaining the problem goes to the log, and the value is replaced with a safe one **for this run only**. The file isn't changed. Always check the warnings in `HarmonyConfig/logs` after a run.
+
+The mod reads and re-saves the config on every run, so the file formatting may change. That's expected.
+
+---
+
+## Map Settings
+
+`Map Settings` (`Настройки Карты`)
+
+| Key | Default | Description |
+|---|---|---|
+| `Generate new map everytime` | `true` | Don't load a previously generated map from disk, generate a new one every time |
+| `Override Map Sizes (9000 not be changed to 6000)` | `true` | Allow sizes below 1000 and above 6000. Without it Rust clamps the size |
+| `Override Map Folder (saves to <Server Root>/maps/)` | `true` | Save the map to `<server folder>/maps/` |
+| `Override Map Name` | `true` | Name the map file using the template below |
+| `Map Name ({0} - size, {1} - seed)` | `CustomGenerator{0}_{1}` | Name template: `{0}` is the size, `{1}` is the seed. `.map` is appended automatically |
+
+> ⚠️ Don't generate maps **larger than 6000**. The Rust client doesn't support them: it shows a 6000 map with monuments and prefabs floating in the air.
+
+Only `{0}` and `{1}` are allowed in the map name. If you use something like `{2}`, the mod falls back to the default template and logs a warning.
+
+---
+
+## Map image
+
+`Map Image` (`Превью Карты`)
+
+```json
+"Map Image": {
+  "Enabled": true,
+  "Scale (pixels per meter)": 0.75,
+  "Ocean margin (pixels)": 350,
+  "Draw grid": true,
+  "Draw monument names": true
+}
+```
+
+| Key | Default | Description |
+|---|---|---|
+| `Enabled` (`Включить`) | `true` | Render the preview to `mapimages/<map name>.png`. `false` skips it and saves about a minute per run |
+| `Scale (pixels per meter)` | `0.75` | Image size: 0.75 on a 4000 map gives 3000 px plus the margins. From 0.1 to 4 |
+| `Ocean margin (pixels)` | `350` | Ocean around the map on each side |
+| `Draw grid` | `true` | The map grid, as in the game |
+| `Draw monument names` | `true` | Monument names, custom monuments included |
+
+---
+
+## Main Generator
+
+`Main Generator` (`Основной Генератор`)
+
+### Roads and rails: `Road`, `Rail`
+
+```json
+"Road": {
+  "ShouldChange": true,
+  "Enabled": true,
+  "GenerateRing": true,
+  "GenerateSideMonuments": true,
+  "GenerateSideObjects": false
+}
+```
+
+| Key | Description |
+|---|---|
+| `ShouldChange` | Master switch for the block. With `false` everything else is ignored and roads (rails) are vanilla |
+| `Enabled` | The ring road (ring rail). `false` means no ring on any map size |
+| `GenerateRing` | Generate the ring on **any** map size. In vanilla the ring only appears on large maps |
+| `GenerateSideMonuments` | Roadside (railside) monuments: gas stations, supermarkets, stations, etc. |
+| `GenerateSideObjects` | **`Road` only.** Roadside objects. With `false` they aren't generated at all. For `Rail` this field does nothing |
+
+> `Enabled` and `GenerateRing` control the **ring** only. Regular roads between monuments are always generated.
+
+### Unique environment: `UniqueEnviroment`
+
+```json
+"UniqueEnviroment": {
+  "ShouldChange": true,
+  "GenerateOasis": true,
+  "GenerateCanyons": true,
+  "GenerateLakes": true
+}
+```
+With `ShouldChange: true`, oases, canyons and lakes are turned on (`true`) or off (`false`) **on any map size**. In vanilla they only appear on maps of 4000–4500 and up. Jungle swamps aren't controlled here: configure them in [Monuments](#monuments) (`unique_environment/jungle`).
+
+### Rivers, powerlines, tunnels and more
+
+| Key (EN) | Key (RU) | Default | Description |
+|---|---|---|---|
+| `Remove Rivers` | `Удалить реки` | `false` | No rivers |
+| `River width scale (1 = default)` | `Множитель ширины рек (1 = по умолчанию)` | `1` | River width: `0.7` is narrower, `1.5` is wider. Must be above 0 |
+| `Remove Car Wrecks around Road` | `Удалить разбитые префабы машин около дороги` | `false` | Remove wrecked cars along roads |
+| `Allow building on road` | `Разрешить строительство на дорогах` | `false` | Allow building on roads: the mod lifts the building block on them |
+| `Remove large powerlines` | `Удалить большие ЛЭП` | `false` | No large powerlines |
+| `Remove tunnel entrances` | `Удалить входы в туннели` | `false` | Remove the underground railway entrances. The tunnels themselves stay |
+| `Remove underground tunnels (also removes entrances)` | `Удалить подземные туннели (вместе со входами)` | `false` | Remove the underground railway entirely, entrances included |
+
+### Tiers and biomes: `Change percentages`
+
+```json
+"Change percentages": true,
+"Tier Percentages (100 in total)": { "Tier0": 30, "Tier1": 30, "Tier2": 40 },
+"Biome Percentages (Arid+Temperate+Tundra+Arctic = 100, Jungle is separate)": {
+  "Arid": 40, "Temperate": 15, "Tundra": 15, "Arctic": 30, "Jungle": 50
+}
+```
+
+- Percentages apply only with `"Change percentages": true`.
+- **Tiers** (loot difficulty zones, from Tier0 near the map edge to Tier2 inland) add up to 100. If they don't, they're scaled proportionally, so 1/1/2 becomes 25/25/50.
+- **Biomes:** `Arid`, `Temperate`, `Tundra` and `Arctic` add up to 100. Otherwise they're scaled proportionally too.
+- **`Jungle` isn't part of that sum.** It's a separate value from 0 to 100, which is 50 in vanilla.
+- Negative values or a zero sum are errors. In that case the vanilla percentages are kept and a warning is logged.
+
+The example above shows the vanilla values, which are a good starting point.
+
+---
+
+## Monuments
+
+`Monuments` (`Монументы`)
+
+### Getting the list
+The mod fills `MonumentList` by itself on every run, whether `Enabled` is on or off.
+1. Run a generation once. `MonumentList` now has every monument group of the game (18 at the moment) with vanilla settings.
+2. Set `"Enabled": true` and edit the groups you need. Leave the rest alone: they have `"ShouldChange": false` and behave as in vanilla.
+
+After a Rust update, new groups are added automatically (the log says `Added N monument groups to the config`), and the groups you edited aren't touched. A group that is no longer in the game stays in the list with a warning in the log, delete it by hand. To reset a group to vanilla values, delete it from the list: it's added back on the next run.
+
+### Groups
+Each entry is a **group** of monuments, not a single monument. A group corresponds to a prefab folder in the game.
+
+> ⚠️ These "folders" live **inside the game's asset bundles** (`Bundles/`), not on disk. The full path looks like `assets/bundled/prefabs/autospawn/<Folder>/`, for example `assets/bundled/prefabs/autospawn/monument/harbor/harbor_1.prefab`. There's no such folder in the server directory: you can't open it or put your own prefabs in it. `Folder` and `OverrideFolder` are paths inside the bundles. Your own monuments are added with [custom monuments](#custom-monuments) or the [swap](#monument-swap).
+
+| `Folder` | `Description` | What it is |
+|---|---|---|
+| `monument/xlarge,monument/large,monument/medium,monument/small` | Main Monuments | Main monuments: Launch Site, Airfield, Military Tunnel, Power Plant… |
+| `monument/harbor` | Harbors | Harbors and the ferry terminal |
+| `monument/fishing_village` | Fishing Villages | Fishing villages |
+| `monument/lighthouse` | Lighthouses | Lighthouses |
+| `monument/military_bases` | Desert Military | Desert military bases |
+| `monument/arctic_bases` | Arctic Bases | Arctic research base |
+| `monument/tiny` | Tiny Monuments | Tiny monuments |
+| `monument/cave` | Caves | Caves |
+| `monument/swamp` | Swamps | Swamps |
+| `monument/ice_lakes` | Ice Lakes | Ice lakes |
+| `monument/jungle_ruins` | Jungle Ruins | Jungle ruins |
+| `monument/underwater_lab` | Underwater Labs | Underwater labs |
+| `tunnel-entrance` | Tunnel Entrances | Underground railway entrances |
+| `mountain` | Mountains | Mountains |
+| `unique_environment/...` | Canyons, Lakes, Oasis, Jungle Swamps | Unique environment |
+
+This list comes from the current Rust version and may change. The up-to-date list is always the one in your `MonumentList` after auto-detection.
+
+### Group fields
+
+```json
+{
+  "ShouldChange": true,
+  "Generate": true,
+  "Description": "Harbors",
+  "Folder": "monument/harbor",
+  "MinWorldSize": 0,
+  "TargetCount": 5,
+  "distanceSame": "Max",
+  "MinDistanceSameType": 300,
+  "distanceDifferent": "Any",
+  "MinDistanceDifferentType": 50,
+  "Filter": { "Enabled": true, "...": "..." },
+  "OverrideFolder": "",
+  "IncludePrefabs": ["harbor"],
+  "ExcludePrefabs": [],
+  "PrefabCopies": { "harbor": 5 },
+  "IgnoreWorldSizeMultiplier": true
+}
+```
+
+**Basics**
+
+| Field | Description |
+|---|---|
+| `ShouldChange` | `true` applies the settings below. `false` keeps the group vanilla and ignores the other fields |
+| `Generate` | `false` means the group isn't generated at all (for example, no lighthouses). Works only with `ShouldChange: true` |
+| `Description`, `Folder` | The group's name and its path in the bundles. The mod finds the group by `Folder`, so **don't change it**. Use `OverrideFolder` to load a different path |
+| `MinWorldSize` | Minimum map size for the group to appear. `0` means any size |
+| `TargetCount` | How many monuments of the group to place. `0` means "every prefab of the group", as in vanilla. You may get fewer if there isn't enough room (see distances) |
+
+**Distances**
+
+| Field | Description |
+|---|---|
+| `MinDistanceSameType` | Minimum distance (m) to monuments of the **same** group |
+| `MinDistanceDifferentType` | Minimum distance (m) to monuments of **other** groups |
+| `distanceSame` / `distanceDifferent` | Placement preference: `Max` prefers far away, `Min` prefers close, `Any` has no preference |
+
+If monuments don't fit, the game gradually relaxes the minimum distances, down to a quarter of the configured values. Large distances make closer placement less likely but don't rule it out.
+
+**Placement filter: `Filter`**
+
+Defines where a monument may stand.
+
+```json
+"Filter": {
+  "Enabled": true,
+  "SplatType": ["Grass", "Forest"],
+  "BiomeType": ["Temperate"],
+  "TopologyAny": [],
+  "TopologyAll": [],
+  "TopologyNot": ["River", "Road"]
+}
+```
+
+| Field | Meaning | Empty list |
+|---|---|---|
+| `Enabled` | `true` replaces the group's vanilla filter with this one | — |
+| `SplatType` | Allowed ground textures | any |
+| `BiomeType` | Allowed biomes | any |
+| `TopologyAny` | **At least one** of these topologies | any |
+| `TopologyAll` | **All** of these topologies | no condition |
+| `TopologyNot` | **None** of these topologies | no condition |
+
+Valid values:
+- **SplatType:** `Dirt`, `Snow`, `Sand`, `Rock`, `Grass`, `Forest`, `Stones`, `Gravel`
+- **BiomeType:** `Arid`, `Temperate`, `Tundra`, `Arctic`, `Jungle` and others
+- **Topology:** `Field`, `Cliff`, `Summit`, `Beachside`, `Beach`, `Forest`, `Forestside`, `Ocean`, `Oceanside`, `Decor`, `Monument`, `Road`, `Roadside`, `Swamp`, `River`, `Riverside`, `Lake`, `Lakeside`, `Offshore`, `Rail`, `Railside`, `Building`, `Cliffside`, `Mountain`, `Clutter`, `Alt`, `Tier0`, `Tier1`, `Tier2`, `Mainland`, `Hilltop`
+
+Names are case-sensitive. The mod drops a misspelled value and logs the full list of valid ones. After auto-detection every group already has its vanilla filter filled in, which is a good starting point.
+
+> A filter only restricts placement. If it's too strict (for example, `Arctic` + `Beach`), you may get no monuments at all.
+
+**Prefab selection**
+
+These fields control *which* monuments of the group end up on the map.
+
+| Field | Description |
+|---|---|
+| `OverrideFolder` | A different path **inside the bundles** instead of the vanilla one, relative to `assets/bundled/prefabs/autospawn/`. Only paths that exist in the game work, for example another group's `Folder`. Separate several paths with commas: `"monument/harbor,monument/lighthouse"`. Empty means the vanilla path |
+| `IncludePrefabs` | Keep only prefabs whose name contains one of these strings. Empty means all |
+| `ExcludePrefabs` | Remove prefabs whose name contains one of these strings |
+| `PrefabCopies` | `"part of name": N`: how many copies of the prefab go into the candidate pool. `0` means none |
+| `IgnoreWorldSizeMultiplier` | Vanilla multiplies `TargetCount` by a map-size factor that is only defined up to 6000. `true` places exactly `TargetCount` |
+
+How it works:
+- Rules are matched against the **prefab name without its folder**, case-insensitive. `"harbor"` matches `harbor_1` and `harbor_2`, but not `ferry_terminal_1`, even though it lives in `monument/harbor`.
+- Normally each prefab of a group appears on the map **once**. So to get 5 harbors out of 2 harbor variants you need **copies**: `PrefabCopies: {"harbor": 5}` plus `TargetCount: 5`.
+- The log shows which prefab names you can use. For every group with rules the mod writes a line like
+  ```
+  Harbors: '.../monument/harbor' 3 -> 10 candidates (available: ferry_terminal_1, harbor_1, harbor_2)
+  ```
+  To see the names in a group, give it any rule (for example, `"ExcludePrefabs": ["nothing"]`) and run a generation.
+
+> Groups are placed one after another. If you greatly increase one group (for example, harbors), later groups may run out of room and some main monuments may disappear. Lower the distances or use a bigger map.
+
+---
+
+## Custom monuments
+
+`Custom Monuments` (`Кастомные Монументы`)
+
+Adds your own monuments made in RustEdit to the map as **new** monuments, together with their terrain. The mod finds free spots for them during generation. Nothing vanilla is replaced: to put your monument in place of a vanilla one, use the [swap](#monument-swap).
+
+| | Custom monuments | Swap |
+|---|---|---|
+| Where | New spots chosen by the mod | Exactly where a vanilla monument stood |
+| Terrain | Heights, textures, topology and holes from your file | Unchanged |
+| Roads and rails | Built around the monument (it's placed before them) | Were built for the original |
+| When | During generation | After the map is saved |
+
+### Settings
+
+```json
+"Custom Monuments": {
+  "Enabled": true,
+  "Folder with .map files (relative to server root)": "maps/custom",
+  "List": [
+    {
+      "Enabled": true,
+      "Name": "Gas station",
+      "File": "gas_station.prefab",
+      "Count": 2,
+      "Radius": 0,
+      "Blend": 25,
+      "HeightMode": "Stamp",
+      "CopySplat": true,
+      "CopyTopology": false,
+      "CopyAlpha": true,
+      "RandomRotation": true,
+      "MaxHeightDifference": 15,
+      "MinHeight": 2,
+      "MaxHeight": 150,
+      "MinDistanceToMonuments": 150,
+      "MinDistanceSameType": 500,
+      "Filter": { "Enabled": false }
+    }
+  ]
+}
+```
+
+`Enabled` turns the whole section on, the folder is where your files are (`maps/custom` by default). Each `List` entry is one monument file.
+
+### Preparing the file
+
+Two formats are supported. Put the file in the folder and write its name in `File`.
+
+**`.map`**: a regular RustEdit map with your monument on it.
+- The **first prefab** in the hierarchy is the anchor, the monument's center. Put a SpawnPoint there (or the original monument prefab), as for the [swap](#step-1-build-the-monument-in-rustedit). A SpawnPoint anchor isn't placed on the map. A `.map` made for the swap works here too.
+- Prefab positions are taken relative to the anchor, heights relative to the ground under the anchor.
+- The terrain (heights, textures, topology, holes) is read from the map around the anchor, so shape the terrain right there.
+
+**`.prefab`**: RustEdit's "Save as prefab".
+- The pivot (0, 0, 0) is the center, `y = 0` is ground level.
+- If RustEdit saved the terrain next to the prefab (`<name>.prefab.heights`, `.splat0`, `.splat1`, `.alpha`, `.topology`), keep those files next to the `.prefab` and they are used. Without them only the prefabs are placed, and `Stamp` works like `Flatten`.
+
+Prefabs that don't exist in the current Rust version and prefabs with broken coordinates (NaN) are skipped with a warning in the log.
+
+### Fields
+
+| Field | Default | Description |
+|---|---|---|
+| `Enabled` | `true` | Place this monument. A missing file turns it off with a warning |
+| `Name` | `""` | Name for the log and the map preview. Empty means the file name |
+| `File` | `""` | File name in the custom monuments folder |
+| `Count` | `1` | How many copies to place. You may get fewer if there's no room |
+| `Radius` | `0` | Footprint radius (m). `0` means auto: the farthest prefab + 10 m, at least 20 m |
+| `Blend` | `25` | Width (m) of the ring around the footprint where the monument's terrain smoothly blends into the world |
+| `HeightMode` | `Stamp` | `Stamp`: heights from the file. `Flatten`: a flat pad. `None`: keep the world terrain |
+| `CopySplat` | `false` | Copy ground textures from the file |
+| `CopyTopology` | `false` | Copy topology from the file (tiers are kept from the world) |
+| `CopyAlpha` | `true` | Copy terrain holes, e.g. bunker entrances |
+| `RandomRotation` | `true` | Rotate each copy randomly around the vertical axis |
+| `MaxHeightDifference` | `15` | Max height difference (m) of the world terrain under the footprint |
+| `MinHeight` / `MaxHeight` | `2` / `150` | Allowed terrain height (m above sea level) at the center |
+| `MinDistanceToMonuments` | `150` | Min distance (m) to other monuments |
+| `MinDistanceSameType` | `500` | Min distance (m) between copies of this monument |
+| `Filter` | off | Where the monument may stand, same as the [group filter](#group-fields) |
+
+### How placement works
+1. Custom monuments are placed right after the vanilla main monuments, **before roads and rails**. The footprint gets the `Monument` topology, so roads, rails, cliffs and decor keep away.
+2. The mod tries random spots and picks the flattest of the first 16 suitable ones. Spots depend on the seed: the same seed gives the same result.
+3. A spot is suitable when:
+   - the terrain height at the center is between `MinHeight` and `MaxHeight`, and the `Filter` allows the center (`TopologyNot` is checked over the whole footprint);
+   - the footprint is on land, with no ocean, river, lake, road, rail or other monument, and the `Blend` ring doesn't touch the ocean, a river or a monument;
+   - the height difference under the footprint is at most `MaxHeightDifference`;
+   - it's at least `MinDistanceToMonuments` + `Radius` from vanilla monuments, and doesn't overlap other custom monuments (`MinDistanceSameType` between copies of one entry).
+4. The terrain inside `Radius` is set by `HeightMode` around the average height of the footprint and blended into the world within `Blend`.
+5. Entries are processed in list order, so earlier ones get the better spots.
+
+The log shows every placed copy and a summary:
+```
+Custom monument 'Gas station' #1: 312, -845 (height 24.3, rotation 117)
+Custom monument 'Gas station': placed 2/2, radius 46m, 118 prefabs each
+```
+
+---
+
+## Monument swap
+
+`Swap Monuments` (`Замена Монументов`)
+
+The swap replaces vanilla monuments on the map with your own versions from `.map` files made in RustEdit. Position, rotation, roads and rails are kept from the original.
+
+### Settings
+
+```json
+"Swap Monuments": {
+  "Enabled": true,
+  "Save both maps (with swap and without)": true
+}
+```
+
+| Key | Description |
+|---|---|
+| `Enabled` (`Включить`) | Enable the swap |
+| `Save both maps (with swap and without)` (`Сохранить обе карты (с заменой и без)`) | `true` keeps the original as `<name>.map` and saves the swapped version as `<name>.swapped.map`. `false` **overwrites** the original with the swapped version |
+
+### How the swap works
+The swap runs **after** generation, once the map is saved:
+1. The mod opens the saved map `maps/<name>.map`.
+2. For every file `maps/prefabs/<name>.map` it looks for monuments whose path contains `<name>` (case-insensitive).
+3. It removes each match and places every prefab from your file in its spot: position and rotation come from the original, and the other prefabs are placed relative to the first object in your file.
+4. It saves the result (see `Save both maps`).
+
+The log and the [report](#generation-report) show what was replaced, for example `Swap: harbor_1.prefab.map: replaced 1 x 'harbor_1.prefab'`. A file that matches nothing on the map gives a warning.
+
+What is **not** transferred:
+- terrain, textures and topology from your `.map`. Only **prefabs** are taken, the ground under the monument stays vanilla;
+- roads and rails: they stay connected to the original monument's layout;
+- the preview in `mapimages/`: it's rendered before the swap and shows the **original** monuments.
+
+### Step 1. Build the monument in RustEdit
+
+**Option A: based on the original** (you add objects around a vanilla monument):
+1. Place the original monument **without rotation** (0, 0, 0). Point (0, 0, 0) is easiest, but the position doesn't matter: everything is calculated relative to it.
+2. Add your objects around it.
+3. The original monument must be the **first object in the hierarchy**.
+
+**Option B: fully custom** (no original):
+1. Place a **SpawnPoint** at **(0, 0, 0)** without rotation and make it **first in the hierarchy**. It marks the **center of the original monument** yours will replace.
+2. Build your monument around that point.
+3. The center of a vanilla monument isn't always its visual center. For example, a gas station's center sits below the building because of the cave under it, so a custom gas station has to be raised or it ends up underground. See the examples in `Examples/prefabs/full_custom_monuments/`.
+
+During the swap the SpawnPoint is replaced by a zero-scale helper prefab and isn't visible on the map.
+
+Ready-made templates are in `CustomPrefabs/` (thanks to FlySelf), examples are in `Examples/prefabs/`.
+
+### Step 2. Name the file correctly
+
+```
+<vanilla prefab name>.prefab.map
+```
+Examples: `harbor_1.prefab.map`, `fishing_village_c.prefab.map`, `gas_station_1.prefab.map`.
+
+- The mod strips `.map` and looks for **`harbor_1.prefab`** in monument paths.
+- **Don't drop `.prefab`.** A file named `harbor_1.map` also works, but it matches just `harbor_1` and may catch things you didn't mean.
+- You can find the vanilla prefab name in RustEdit or in the monument log (the `available` list, see [Group fields](#group-fields)).
+
+### Step 3. Put the file in place
+
+```
+<server folder>/maps/prefabs/harbor_1.prefab.map
+```
+The folder is created automatically on the first swap. You can have any number of files, and each one replaces **every** matching monument on the map.
+
+### Step 4. Generate the map
+Run a generation. `[SWAP MN]` lines appear in the server log. Check the result by opening `.swapped.map` (or `.map`) in RustEdit.
+
+### Combining swap with monument settings
+They work together. For example, make 3 harbors with `PrefabCopies` and replace every `harbor_1` with your version: the swap replaces **each** copy.
+
+---
+
+## Recipes
+
+**Small map with ring road and ring rail, no rivers**
+```json
+"Road": { "ShouldChange": true, "Enabled": true, "GenerateRing": true, "GenerateSideMonuments": true, "GenerateSideObjects": true },
+"Rail": { "ShouldChange": true, "Enabled": true, "GenerateRing": true, "GenerateSideMonuments": true, "GenerateSideObjects": false },
+"Remove Rivers": true
+```
+
+**More snow, less desert**
+```json
+"Change percentages": true,
+"Biome Percentages (Arid+Temperate+Tundra+Arctic = 100, Jungle is separate)": { "Arid": 15, "Temperate": 25, "Tundra": 20, "Arctic": 40, "Jungle": 30 }
+```
+
+**5 harbors, no ferry terminal** (group `monument/harbor`)
+```json
+"ShouldChange": true, "Generate": true, "TargetCount": 5, "MinDistanceSameType": 300,
+"IncludePrefabs": ["harbor"], "PrefabCopies": { "harbor": 5 }, "IgnoreWorldSizeMultiplier": true
+```
+
+**One fishing village of a specific type** (group `monument/fishing_village`)
+```json
+"ShouldChange": true, "Generate": true, "TargetCount": 1, "IncludePrefabs": ["fishing_village_c"]
+```
+
+**No lighthouses** (group `monument/lighthouse`)
+```json
+"ShouldChange": true, "Generate": false
+```
+
+**No underground railway and no powerlines**
+```json
+"Remove underground tunnels (also removes entrances)": true,
+"Remove large powerlines": true
+```
+
+---
+
+## Troubleshooting
+
+| Problem | What to check |
+|---|---|
+| The server shuts down right after starting | That's by design: the mod generates a map and shuts the server down. Remove `CustomGenerator.dll` from `HarmonyMods` to run a normal server |
+| A setting has no effect | Is `ShouldChange: true` set in that block or group? Any `[WARN]` lines in `HarmonyConfig/logs`? |
+| The config "reset itself" | The JSON was probably broken. Look for `CustomGenerator.json.broken-*` next to it |
+| Fewer monuments than `TargetCount` | Not enough room: lower `MinDistance*`, loosen `Filter`, use a bigger map. Duplicates need `PrefabCopies` |
+| Other monuments disappeared | One group took their space. Shrink it or lower the distances |
+| I don't know a prefab name | Give the group any rule and look for the `available:` line in the log |
+| The swap didn't work | Is the file in `maps/prefabs/`? Is it named `<prefab>.prefab.map`? Is `Swap Monuments → Enabled` set to `true`? Any `Swap:` errors in the log? |
+| A swapped monument is shifted, rotated or underground | Is the original or the SpawnPoint first in the hierarchy? Is it unrotated? Does the SpawnPoint match the original's center, height included? |
+| A custom monument wasn't placed | Look for `no suitable spot found` in the log: lower the distances, raise `MaxHeightDifference`, widen `MinHeight`–`MaxHeight`, loosen `Filter`, use a bigger map. File errors are logged too |
+| A custom monument floats or is buried | `.map`: is the anchor (first prefab) on the ground? `.prefab`: is `y = 0` the ground level? Try `"HeightMode": "Flatten"` |
+| The preview shows the old monuments | Expected: the preview is rendered before the swap. Check the result in RustEdit |
+| No preview or a font error | The fonts come with the release archive. Otherwise the mod downloads them, so without internet access copy them from the repository's `Resources/` folder to `mapimages/resources/`. Also check `Map Image → Enabled` |
+| A map above 6000 looks broken | The Rust client doesn't support such sizes, stay at 6000 or below |
+
+For support, join [our Discord](https://discord.gg/xUdpkm8RUS).

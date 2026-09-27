@@ -3,7 +3,9 @@ using HarmonyLib;
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.IO;
 using System.Reflection;
+using UnityEngine;
 
 using static CustomGenerator.ExtConfig;
 namespace CustomGenerator.Generators
@@ -20,7 +22,7 @@ namespace CustomGenerator.Generators
 
         private static MethodBase TargetMethod() { return AccessTools.Method(typeof(PlaceMonuments), nameof(PlaceMonuments.Process)); }
         private static bool Prefix(PlaceMonuments __instance) {
-            if (Config.Generator.RemoveTunnelsEntrances && __instance.ResourceFolder == "tunnel-entrance") {
+            if ((Config.Generator.RemoveTunnelsEntrances || Config.Generator.RemoveTunnels) && __instance.ResourceFolder == "tunnel-entrance") {
                 Logging.Generation("Tunnel Entrances off");
                 MinWorldSize(__instance) = 999999;
                 //return false;
@@ -75,16 +77,93 @@ namespace CustomGenerator.Generators
             if (monument.Filter.Enabled) {
                 __instance.Filter = new SpawnFilter {
                     BiomeType =   monument.Filter.BiomeType.Count == 0 ? (TerrainBiome.Enum)(-1) :    (TerrainBiome.Enum)EnumParser.GetFilterEnum("BiomeType", monument.Filter.BiomeType),
-                    SplatType =   monument.Filter.BiomeType.Count == 0 ? (TerrainSplat.Enum)(-1) :    (TerrainSplat.Enum)EnumParser.GetFilterEnum("SplatType", monument.Filter.SplatType),
-                    TopologyAll = monument.Filter.BiomeType.Count == 0 ? (TerrainTopology.Enum)(0) :  (TerrainTopology.Enum)EnumParser.GetFilterEnum("TopologyAll", monument.Filter.TopologyAll),
-                    TopologyAny = monument.Filter.BiomeType.Count == 0 ? (TerrainTopology.Enum)(-1) : (TerrainTopology.Enum)EnumParser.GetFilterEnum("TopologyAny", monument.Filter.TopologyAny),
-                    TopologyNot = monument.Filter.BiomeType.Count == 0 ? (TerrainTopology.Enum)(0) :  (TerrainTopology.Enum)EnumParser.GetFilterEnum("TopologyNot", monument.Filter.TopologyNot),
+                    SplatType =   monument.Filter.SplatType.Count == 0 ? (TerrainSplat.Enum)(-1) :    (TerrainSplat.Enum)EnumParser.GetFilterEnum("SplatType", monument.Filter.SplatType),
+                    TopologyAll = monument.Filter.TopologyAll.Count == 0 ? (TerrainTopology.Enum)(0) :  (TerrainTopology.Enum)EnumParser.GetFilterEnum("TopologyAll", monument.Filter.TopologyAll),
+                    TopologyAny = monument.Filter.TopologyAny.Count == 0 ? (TerrainTopology.Enum)(-1) : (TerrainTopology.Enum)EnumParser.GetFilterEnum("TopologyAny", monument.Filter.TopologyAny),
+                    TopologyNot = monument.Filter.TopologyNot.Count == 0 ? (TerrainTopology.Enum)(0) :  (TerrainTopology.Enum)EnumParser.GetFilterEnum("TopologyNot", monument.Filter.TopologyNot),
                 };
             }
-            //Debug.Log(__instance.TargetCountWorldSizeMultiplier.Evaluate(World.Size));
-            //Debug.Log(__instance.TargetCount * __instance.TargetCountWorldSizeMultiplier.Evaluate(World.Size));
+            if (!string.IsNullOrEmpty(monument.OverrideFolder)) {
+                Logging.Generation($"{monument.Description}: folder '{__instance.ResourceFolder}' -> '{monument.OverrideFolder}'");
+                __instance.ResourceFolder = monument.OverrideFolder;
+            }
+            if (monument.IgnoreWorldSizeMultiplier)
+                __instance.TargetCountWorldSizeMultiplier = AnimationCurve.Constant(0f, 100000f, 1f);
+            if (monument.HasPrefabRules)
+                Prefab_FindPrefabNames.Active = monument;
+
             Logging.Generation($"Changed instance values for {monument.Description}");
             return true;
+        }
+
+        private static void Finalizer() {
+            Prefab_FindPrefabNames.Active = null;
+        }
+    }
+
+    // PlaceMonuments loads its candidates through Prefab.FindPrefabNames, where a name is repeated
+    // PrefabParameters.Count times. While a group with prefab rules runs, filter that list.
+    [HarmonyPatch]
+    class Prefab_FindPrefabNames {
+        internal static ExtConfig.Monument Active;
+
+        private static MethodBase TargetMethod() { return AccessTools.Method(typeof(Prefab), "FindPrefabNames"); }
+        private static void Postfix(string strPrefab, ref string[] __result) {
+            // Every name the group could use, before our rules filter them, for the config editor
+            if (__result != null) GenerationReport.PrefabNames(__result.Select(Path.GetFileNameWithoutExtension));
+
+            var monument = Active;
+            if (monument == null || __result == null) return;
+
+            var result = new List<string>();
+            foreach (var group in __result.GroupBy(x => x)) {
+                // Match rules against the prefab name only, the path contains the folder (e.g. monument/harbor/)
+                string name = Path.GetFileNameWithoutExtension(group.Key);
+                if (monument.IncludePrefabs.Count > 0 && !monument.IncludePrefabs.Any(name.Contains)) continue;
+                if (monument.ExcludePrefabs.Any(name.Contains)) continue;
+
+                var copies = monument.PrefabCopies.FirstOrDefault(x => name.Contains(x.Key));
+                int count = copies.Key != null ? copies.Value : group.Count();
+                for (int i = 0; i < count; i++) result.Add(group.Key);
+            }
+
+            string available = string.Join(", ", __result.Distinct().Select(Path.GetFileNameWithoutExtension));
+            Logging.Generation($"{monument.Description}: '{strPrefab}' {__result.Length} -> {result.Count} candidates (available: {available})");
+            __result = result.ToArray();
+        }
+    }
+
+    // Counts the prefabs each monument step added, for the generation report. The postfix runs first,
+    // so custom monuments placed right after "Main Monuments" aren't counted into it.
+    [HarmonyPatch]
+    class PlaceMonuments_Report {
+        private static IEnumerable<MethodBase> TargetMethods() {
+            foreach (var name in new[] { "PlaceMonuments", "PlaceMonumentsRoadside", "PlaceMonumentsRailside" }) {
+                var type = AccessTools.TypeByName(name);
+                var method = type == null ? null : AccessTools.Method(type, "Process");
+                if (method != null) yield return method;
+            }
+        }
+
+        // Runs before the settings prefix, so ResourceFolder is still the vanilla one (the key of the group in the config)
+        [HarmonyPriority(Priority.First)]
+        private static void Prefix(ProceduralComponent __instance, out int __state) {
+            __state = World.Serialization?.world?.prefabs?.Count ?? 0;
+            GenerationReport.CurrentFolder = (__instance as PlaceMonuments)?.ResourceFolder;
+        }
+
+        [HarmonyPriority(Priority.First)]
+        private static void Postfix(ProceduralComponent __instance, int __state) {
+            string folder = GenerationReport.CurrentFolder;
+            GenerationReport.CurrentFolder = null;
+            var prefabs = World.Serialization?.world?.prefabs;
+            if (prefabs == null) return;
+            var added = prefabs.Skip(__state).Select(x => Path.GetFileNameWithoutExtension(StringPool.Get(x.id) ?? x.id.ToString()));
+
+            // Show the target only when it's exact: set in the config and not scaled by map size
+            var cfg = Config.Monuments.Enabled && folder != null ? Config.Monuments.monuments.FirstOrDefault(x => x.ShouldChange && x.Folder == folder) : null;
+            int target = cfg != null && cfg.TargetCount > 0 && cfg.IgnoreWorldSizeMultiplier ? (cfg.Generate ? cfg.TargetCount : 0) : -1;
+            GenerationReport.MonumentGroup(__instance.Description, folder, target, added);
         }
     }
 
@@ -107,12 +186,12 @@ namespace CustomGenerator.Generators
         private static MethodBase TargetMethod() { return AccessTools.Method(typeof(WorldSetup), nameof(WorldSetup.InitCoroutine)); }
         private static FieldInfo _monuments = AccessTools.TypeByName("PlaceMonuments").GetField("Monuments", BindingFlags.NonPublic);
         private static bool Prefix(WorldSetup __instance) {
-            if (!tempData.shouldGetMonuments || !Config.Monuments.Enabled) return true;
+            // Runs every time (even with Monuments disabled), so the list is ready to edit after the first run
             PlaceMonuments[] placeMonuments = SingletonComponent<WorldSetup>.Instance.GetComponentsInChildren<ProceduralComponent>(true).OfType<PlaceMonuments>().ToArray();
-            Logging.Info($"Founded {placeMonuments.Length} PlaceMonuments.");
-            Config.Monuments.monuments.Clear();
+            Logging.Info($"Found {placeMonuments.Length} monument groups.");
+            var found = new List<ExtConfig.Monument>();
             foreach (var mon in placeMonuments) {
-                Config.Monuments.monuments.Add(new ExtConfig.Monument { 
+                found.Add(new ExtConfig.Monument { 
                     Description = mon.Description, 
                     Folder = mon.ResourceFolder, 
                     distanceDifferent = mon.DistanceDifferentType, 
@@ -133,7 +212,7 @@ namespace CustomGenerator.Generators
                     Generate = true, ShouldChange = false,
                 });
             }
-            SaveConfig();
+            MergeMonumentGroups(found);
 
             return true;
         }

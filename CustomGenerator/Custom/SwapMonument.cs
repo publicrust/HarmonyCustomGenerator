@@ -5,58 +5,74 @@ using System.IO;
 using System.Linq;
 using UnityEngine;
 
+using CustomGenerator.Utility;
+
 using static CustomGenerator.ExtConfig;
 public class SwapMonument {
-    private static WorldSerialization _mainMap = new WorldSerialization();
-    private static WorldSerialization _swapMap = new WorldSerialization();
-    private static List<Monument> monuments = new List<Monument>();
-    private static string mapPath = string.Empty;
+    private const string Folder = "maps/prefabs";
 
     public static void Initiate(string path) {
-        mapPath = path;
-        _mainMap.Load(mapPath);
+        var mainMap = new WorldSerialization();
+        mainMap.Load(path);
+        if (mainMap.world?.prefabs == null || mainMap.world.prefabs.Count == 0) {
+            Logging.Error($"Swap: failed to load the saved map {path}, swap skipped");
+            return;
+        }
 
-        Log(_mainMap.world.prefabs.Count);
-        LoadMonuments();
-        SwapMonuments();
+        var files = LoadMonuments();
+        if (files.Count == 0) {
+            Logging.Warning($"Swap: no .map files in {Path.GetFullPath(Folder)}, nothing to swap");
+            return;
+        }
 
-        if (!Config.Swap.SaveBothMaps)
-            _mainMap.Save(mapPath);
-        else _mainMap.Save(mapPath.Replace(".map", ".swapped.map"));
+        int replaced = SwapMonuments(mainMap, files);
+        string target = Config.Swap.SaveBothMaps ? Path.ChangeExtension(path, ".swapped.map") : path;
+        mainMap.Save(target);
+        Logging.Info($"Swap: {replaced} monuments replaced, saved to {target}");
+        GenerationReport.SwapSaved(target);
     }
 
-    private static void SwapMonuments() {
-        foreach (Monument monument in monuments) {
-            var matchPrefabs = _mainMap.world.prefabs.Where(x => StringPool.Get(x.id).Contains(monument.prefabShortname)).ToList();
+    private static int SwapMonuments(WorldSerialization mainMap, List<Monument> files) {
+        // Matches come from the original prefabs, so prefabs inserted by one swap are never swapped again
+        var original = mainMap.world.prefabs.ToList();
+        int total = 0;
 
-            // debug
-            /*Log("-----");
-            Log(monument.prefabShortname.ToString());
-            Log(monument.path);
-            Log(matchPrefabs.Count());*/
-            // debug
-
-            if (matchPrefabs.Count() == 0) continue;
-            foreach (var firstfab in matchPrefabs) {
-                _swapMap.Load(monument.path);
-                _mainMap.world.prefabs.Remove(firstfab);
-                _mainMap.world.prefabs.AddRange(
-                    MapHander.CreatePrefabFromMap(firstfab.position, firstfab.rotation, _swapMap.world.prefabs)
-                );
+        foreach (Monument monument in files) {
+            string file = Path.GetFileName(monument.path);
+            var matches = original.Where(x => (StringPool.Get(x.id) ?? "").ToLowerInvariant().Contains(monument.prefabShortname)).ToList();
+            if (matches.Count == 0) {
+                Logging.Warning($"Swap: {file}: no '{monument.prefabShortname}' on the map, skipped (is the file named <vanilla prefab>.prefab.map?)");
+                GenerationReport.Swap(file, 0, "no such monument on the map");
+                continue;
             }
+
+            var swapMap = new WorldSerialization();
+            try { swapMap.Load(monument.path); }
+            catch (Exception ex) { Logging.Error($"Swap: {file}: failed to load", ex); GenerationReport.Swap(file, 0, "failed to load the file"); continue; }
+            if (swapMap.world?.prefabs == null || swapMap.world.prefabs.Count == 0) {
+                Logging.Error($"Swap: {file}: no prefabs in the file");
+                GenerationReport.Swap(file, 0, "no prefabs in the file");
+                continue;
+            }
+
+            foreach (var prefab in matches) {
+                mainMap.world.prefabs.Remove(prefab);
+                mainMap.world.prefabs.AddRange(MapHander.CreatePrefabFromMap(prefab.position, prefab.rotation, swapMap.world.prefabs));
+            }
+            total += matches.Count;
+            Logging.Info($"Swap: {file}: replaced {matches.Count} x '{monument.prefabShortname}' ({swapMap.world.prefabs.Count} prefabs each)");
+            GenerationReport.Swap(file, matches.Count);
         }
+        return total;
     }
 
-    private static void LoadMonuments() {
-        if (!Directory.Exists("maps/prefabs")) Directory.CreateDirectory("maps/prefabs");
+    private static List<Monument> LoadMonuments() {
+        if (!Directory.Exists(Folder)) Directory.CreateDirectory(Folder);
 
-        string[] files = Directory.GetFiles("maps/prefabs");
-        foreach (string file in files) {
-            if (!Path.GetFileName(file).EndsWith(".map")) continue;
-
-            string prefabShortname = Path.GetFileNameWithoutExtension(file);
-            monuments.Add(new Monument(prefabShortname, file));
-        }
+        return Directory.GetFiles(Folder)
+            .Where(file => file.EndsWith(".map", StringComparison.OrdinalIgnoreCase))
+            .Select(file => new Monument(Path.GetFileNameWithoutExtension(file).ToLowerInvariant(), file))
+            .ToList();
     }
 
     class Monument {
@@ -68,8 +84,6 @@ public class SwapMonument {
             this.path = path;
         }
     }
-
-    static void Log(object obj) => Debug.Log("[SWAP MN] " + obj);
 }
 
 

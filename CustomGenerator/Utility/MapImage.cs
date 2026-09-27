@@ -46,19 +46,22 @@ namespace CustomGenerator.Utility {
                 }
             }
         }
-        public static void RenderMap(float scale = 0.5f, int oceanMargin = 500) {
+        public static void RenderMap() {
+            var settings = Config.MapImage;
+            if (!settings.Enabled) { Logging.Info("Map image disabled in the config"); return; }
             CheckResources();
 
-            byte[] array = MapImageRender.Render(out int num, out int num2, out Color color, scale, false, false, 350);
+            byte[] array = MapImageRender.Render(out int num, out int num2, out Color color, settings.Scale, false, false, settings.OceanMargin);
             if (array == null) {
                 Logging.Error("MapImageGenerator returned null!"); return;
             }
 
-            string mapName = string.Format(Config.mapSettings.MapName, tempData.mapsize, tempData.mapseed).Replace(".map", "");
+            // Named after the saved map, whatever Override Name/Folder are
+            string mapName = Path.GetFileNameWithoutExtension(World.MapFileName);
             string fullPath = Path.GetFullPath(Path.Combine(Environment.CurrentDirectory, $"mapimages/{mapName}.png"));
             File.WriteAllBytes(fullPath, array);
-            Logging.Info("Generated Map image: /mapimages/");
-            Logging.Info(string.Format("Map saved to {0}", Config.mapSettings.OverrideFolder ? "/maps/" : "original map folder"));
+            Logging.Info($"Generated Map image: {fullPath}");
+            GenerationReport.Image(fullPath);
         }
     }
 
@@ -225,7 +228,7 @@ namespace CustomGenerator.Utility {
             background = output[0, 0];
 
             LoadIcons(ref output, imageWidth, imageHeight, mapRes, oceanMargin);
-            RenderGrid(ref output, mapRes, imageWidth, oceanMargin);
+            if (Config.MapImage.Grid) RenderGrid(ref output, mapRes, imageWidth, oceanMargin);
 
             Logging.Info($"  - Render took {stopwatch.Elapsed.Seconds}s.");
             Logging.Info("6/6 | Done! Encoding...");
@@ -265,7 +268,13 @@ namespace CustomGenerator.Utility {
                     mapMonuments.Add(new MapMonument { name = name, x = x, y = z, indication = Indication.None });
             }
 
-            RenderMonument(mapMonuments, PermanentMarkerFont, ref output);
+            foreach (var custom in tempData.customMonuments) {
+                int x = (int)(((custom.Value.x + (tempData.mapsize / 2.0)) / tempData.mapsize) * mapResolution) + originalMapOffset;
+                int z = (int)(((custom.Value.z + (tempData.mapsize / 2.0)) / tempData.mapsize) * mapResolution) + originalMapOffset;
+                mapMonuments.Add(new MapMonument { name = custom.Key, x = x, y = z, indication = Indication.Regular });
+            }
+
+            if (Config.MapImage.MonumentNames) RenderMonument(mapMonuments, PermanentMarkerFont, ref output);
             RenderGithub(DinProFontBold, ref output, mapResolution, imageWidth);
         }
 
